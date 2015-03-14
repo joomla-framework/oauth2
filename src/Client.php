@@ -88,38 +88,34 @@ class Client
 			$data['client_secret'] = $this->getOption('clientsecret');
 			$response = $this->http->post($this->getOption('tokenurl'), $data);
 
-			if ($response->code >= 200 && $response->code < 400)
-			{
-				if (strpos($response->headers['Content-Type'], 'application/json') !== false)
-				{
-					$token = array_merge(json_decode($response->body, true), array('created' => time()));
-				}
-				else
-				{
-					parse_str($response->body, $token);
-					$token = array_merge($token, array('created' => time()));
-				}
-
-				$this->setToken($token);
-
-				return $token;
-			}
-			else
+			if (!($response->code >= 200 && $response->code < 400))
 			{
 				throw new \RuntimeException('Error code ' . $response->code . ' received requesting access token: ' . $response->body . '.');
 			}
+
+			if (strpos($response->headers['Content-Type'], 'application/json') !== false)
+			{
+				$token = array_merge(json_decode($response->body, true), array('created' => time()));
+			}
+			else
+			{
+				parse_str($response->body, $token);
+				$token = array_merge($token, array('created' => time()));
+			}
+
+			$this->setToken($token);
+
+			return $token;
 		}
 
 		if ($this->getOption('sendheaders'))
 		{
-			if ($this->application instanceof AbstractWebApplication)
-			{
-				$this->application->redirect($this->createUrl());
-			}
-			else
+			if (!($this->application instanceof AbstractWebApplication))
 			{
 				throw new \RuntimeException('AbstractWebApplication object required for authentication process.');
 			}
+
+			$this->application->redirect($this->createUrl());
 		}
 
 		return false;
@@ -140,14 +136,12 @@ class Client
 		{
 			return false;
 		}
-		elseif (array_key_exists('expires_in', $token) && $token['created'] + $token['expires_in'] < time() + 20)
+		if (array_key_exists('expires_in', $token) && $token['created'] + $token['expires_in'] < time() + 20)
 		{
 			return false;
 		}
-		else
-		{
-			return true;
-		}
+
+		return true;
 	}
 
 	/**
@@ -166,16 +160,7 @@ class Client
 		}
 
 		$url = $this->getOption('authurl');
-
-		if (strpos($url, '?'))
-		{
-			$url .= '&';
-		}
-		else
-		{
-			$url .= '?';
-		}
-
+		$url .= (strpos($url, '?') !== false) ? '&' : '?';
 		$url .= 'response_type=code';
 		$url .= '&client_id=' . urlencode($this->getOption('clientid'));
 
@@ -382,25 +367,23 @@ class Client
 		$data['client_secret'] = $this->getOption('clientsecret');
 		$response = $this->http->post($this->getOption('tokenurl'), $data);
 
-		if ($response->code >= 200 || $response->code < 400)
-		{
-			if (strpos($response->headers['Content-Type'], 'application/json') !== false)
-			{
-				$token = array_merge(json_decode($response->body, true), array('created' => time()));
-			}
-			else
-			{
-				parse_str($response->body, $token);
-				$token = array_merge($token, array('created' => time()));
-			}
-
-			$this->setToken($token);
-
-			return $token;
-		}
-		else
+		if (!($response->code >= 200 || $response->code < 400))
 		{
 			throw new \Exception('Error code ' . $response->code . ' received refreshing token: ' . $response->body . '.');
 		}
+
+		if (strpos($response->headers['Content-Type'], 'application/json') !== false)
+		{
+			$token = array_merge(json_decode($response->body, true), array('created' => time()));
+		}
+		else
+		{
+			parse_str($response->body, $token);
+			$token = array_merge($token, array('created' => time()));
+		}
+
+		$this->setToken($token);
+
+		return $token;
 	}
 }
