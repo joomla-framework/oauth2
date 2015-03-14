@@ -9,6 +9,7 @@
 namespace Joomla\OAuth2;
 
 use Joomla\Application\AbstractWebApplication;
+use Joomla\Http\HttpFactory;
 use Joomla\Input\Input;
 use Joomla\Http\Http;
 
@@ -61,11 +62,11 @@ class Client
 	 *
 	 * @since   1.0
 	 */
-	public function __construct($options = array(), Http $http, Input $input, AbstractWebApplication $application = null)
+	public function __construct($options = array(), Http $http = null, Input $input = null, AbstractWebApplication $application = null)
 	{
 		$this->options = $options;
-		$this->http = $http;
-		$this->input = $input;
+		$this->http = $http instanceof Http ? $http : HttpFactory::getHttp($this->options);
+		$this->input = $input instanceof Input ? $input : ($application instanceof AbstractWebApplication ? $application->input : new Input);
 		$this->application = $application;
 	}
 
