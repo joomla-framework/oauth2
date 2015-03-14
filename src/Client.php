@@ -23,7 +23,7 @@ class Client
 	/**
 	 * Options for the Client object.
 	 *
-	 * @var    array
+	 * @var    array|\ArrayAccess
 	 * @since  1.0
 	 */
 	protected $options;
@@ -55,7 +55,7 @@ class Client
 	/**
 	 * Constructor.
 	 *
-	 * @param   array                   $options      OAuth2 Client options object
+	 * @param   array|\ArrayAccess      $options      OAuth2 Client options object
 	 * @param   Http                    $http         The HTTP client object
 	 * @param   Input                   $input        The input object
 	 * @param   AbstractWebApplication  $application  The application object
@@ -64,6 +64,13 @@ class Client
 	 */
 	public function __construct($options = array(), Http $http = null, Input $input = null, AbstractWebApplication $application = null)
 	{
+		if (!is_array($options) && !($options instanceof \ArrayAccess))
+		{
+			throw new \InvalidArgumentException(
+				'The options param must be an array or implement the ArrayAccess interface.'
+			);
+		}
+
 		$this->options = $options;
 		$this->http = $http instanceof Http ? $http : HttpFactory::getHttp($this->options);
 		$this->input = $input instanceof Input ? $input : ($application instanceof AbstractWebApplication ? $application->input : new Input);
@@ -269,15 +276,16 @@ class Client
 	/**
 	 * Get an option from the OAuth2 Client instance.
 	 *
-	 * @param   string  $key  The name of the option to get
+	 * @param   string  $key      The name of the option to get
+	 * @param   mixed   $default  Optional default value, returned if the requested option does not exist.
 	 *
 	 * @return  mixed  The option value
 	 *
 	 * @since   1.0
 	 */
-	public function getOption($key)
+	public function getOption($key, $default = null)
 	{
-		return isset($this->options[$key]) ? $this->options[$key] : null;
+		return isset($this->options[$key]) ? $this->options[$key] : $default;
 	}
 
 	/**
