@@ -143,6 +143,7 @@ class Client
 		{
 			return false;
 		}
+
 		if (array_key_exists('expires_in', $token) && $token['created'] + $token['expires_in'] < time() + 20)
 		{
 			return false;
