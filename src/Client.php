@@ -11,9 +11,6 @@ namespace Joomla\OAuth2;
 use Joomla\Application\AbstractWebApplication;
 use Joomla\Input\Input;
 use Joomla\Http\Http;
-use InvalidArgumentException;
-use RuntimeException;
-use Exception;
 
 /**
  * Joomla Framework class for interacting with an OAuth 2.0 server.
@@ -23,25 +20,33 @@ use Exception;
 class Client
 {
 	/**
-	 * @var    array  Options for the Client object.
+	 * Options for the Client object.
+	 *
+	 * @var    array
 	 * @since  1.0
 	 */
 	protected $options;
 
 	/**
-	 * @var    Http  The HTTP client object to use in sending HTTP requests.
+	 * The HTTP client object to use in sending HTTP requests.
+	 *
+	 * @var    Http
 	 * @since  1.0
 	 */
 	protected $http;
 
 	/**
-	 * @var    Input  The input object to use in retrieving GET/POST data.
+	 * The input object to use in retrieving GET/POST data.
+	 *
+	 * @var    Input
 	 * @since  1.0
 	 */
 	protected $input;
 
 	/**
-	 * @var    AbstractWebApplication  The application object to send HTTP headers for redirects.
+	 * The application object to send HTTP headers for redirects.
+	 *
+	 * @var    AbstractWebApplication
 	 * @since  1.0
 	 */
 	protected $application;
@@ -70,7 +75,7 @@ class Client
 	 * @return  string  The access token
 	 *
 	 * @since   1.0
-	 * @throws  RuntimeException
+	 * @throws  \RuntimeException
 	 */
 	public function authenticate()
 	{
@@ -100,7 +105,7 @@ class Client
 			}
 			else
 			{
-				throw new RuntimeException('Error code ' . $response->code . ' received requesting access token: ' . $response->body . '.');
+				throw new \RuntimeException('Error code ' . $response->code . ' received requesting access token: ' . $response->body . '.');
 			}
 		}
 
@@ -112,7 +117,7 @@ class Client
 			}
 			else
 			{
-				throw new RuntimeException('AbstractWebApplication object required for authentication process.');
+				throw new \RuntimeException('AbstractWebApplication object required for authentication process.');
 			}
 		}
 
@@ -147,16 +152,16 @@ class Client
 	/**
 	 * Create the URL for authentication.
 	 *
-	 * @return  \Joomla\Http\Response  The HTTP response
+	 * @return  string  The URL for authentication
 	 *
 	 * @since   1.0
-	 * @throws  InvalidArgumentException
+	 * @throws  \InvalidArgumentException
 	 */
 	public function createUrl()
 	{
 		if (!$this->getOption('authurl') || !$this->getOption('clientid'))
 		{
-			throw new InvalidArgumentException('Authorization URL and client_id are required');
+			throw new \InvalidArgumentException('Authorization URL and client_id are required');
 		}
 
 		$url = $this->getOption('authurl');
@@ -201,19 +206,19 @@ class Client
 	}
 
 	/**
-	 * Send a signed Oauth request.
+	 * Send a signed OAuth request.
 	 *
-	 * @param   string  $url      The URL forf the request.
-	 * @param   mixed   $data     The data to include in the request
-	 * @param   array   $headers  The headers to send with the request
-	 * @param   string  $method   The method with which to send the request
-	 * @param   int     $timeout  The timeout for the request
+	 * @param   string   $url      The URL for the request
+	 * @param   mixed    $data     Either an associative array or a string to be sent with the request
+	 * @param   array    $headers  The headers to send with the request
+	 * @param   string   $method   The method with which to send the request
+	 * @param   integer  $timeout  The timeout for the request
 	 *
-	 * @return  string  The URL.
+	 * @return  \Joomla\Http\Response
 	 *
 	 * @since   1.0
-	 * @throws  InvalidArgumentException
-	 * @throws  RuntimeException
+	 * @throws  \InvalidArgumentException
+	 * @throws  \RuntimeException
 	 */
 	public function query($url, $data = null, $headers = array(), $method = 'get', $timeout = null)
 	{
@@ -264,12 +269,12 @@ class Client
 				break;
 
 			default:
-				throw new InvalidArgumentException('Unknown HTTP request method: ' . $method . '.');
+				throw new \InvalidArgumentException('Unknown HTTP request method: ' . $method . '.');
 		}
 
 		if ($response->code < 200 || $response->code >= 400)
 		{
-			throw new RuntimeException('Error code ' . $response->code . ' received requesting data: ' . $response->body . '.');
+			throw new \RuntimeException('Error code ' . $response->code . ' received requesting data: ' . $response->body . '.');
 		}
 
 		return $response;
@@ -348,14 +353,14 @@ class Client
 	 * @return  array  The new access token
 	 *
 	 * @since   1.0
-	 * @throws  Exception
-	 * @throws  RuntimeException
+	 * @throws  \Exception
+	 * @throws  \RuntimeException
 	 */
 	public function refreshToken($token = null)
 	{
 		if (!$this->getOption('userefresh'))
 		{
-			throw new RuntimeException('Refresh token is not supported for this OAuth instance.');
+			throw new \RuntimeException('Refresh token is not supported for this OAuth instance.');
 		}
 
 		if (!$token)
@@ -364,7 +369,7 @@ class Client
 
 			if (!array_key_exists('refresh_token', $token))
 			{
-				throw new RuntimeException('No refresh token is available.');
+				throw new \RuntimeException('No refresh token is available.');
 			}
 
 			$token = $token['refresh_token'];
@@ -394,7 +399,7 @@ class Client
 		}
 		else
 		{
-			throw new Exception('Error code ' . $response->code . ' received refreshing token: ' . $response->body . '.');
+			throw new \Exception('Error code ' . $response->code . ' received refreshing token: ' . $response->body . '.');
 		}
 	}
 }
