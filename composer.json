@@ -13,6 +13,7 @@
     },
     "require-dev": {
         "joomla/test": "~1.0",
+        "joomla/registry": "2.0.*@dev",
         "phpunit/phpunit": "4.*",
         "squizlabs/php_codesniffer": "1.*"
     },

@@ -4,41 +4,51 @@
  * @license    GNU General Public License version 2 or later; see LICENSE
  */
 
+namespace Joomla\OAuth2\Tests;
+
 use Joomla\OAuth2\Client;
-use Joomla\Registry\Registry;
-use Joomla\Input\Input;
 use Joomla\Http\Http;
+use Joomla\Input\Input;
+use Joomla\Registry\Registry;
 use Joomla\Test\WebInspector;
 
 /**
- * Test class for Client.
- *
- * @since  1.0
+ * Test class for \Joomla\OAuth2\Client.
  */
-class ClientTest extends PHPUnit_Framework_TestCase
+class ClientTest extends \PHPUnit_Framework_TestCase
 {
 	/**
-	 * @var    Registry  Options for the Client object.
+	 * Options for the Client object.
+	 *
+	 * @var  Registry
 	 */
 	protected $options;
 
 	/**
-	 * @var    Http  Mock client object.
+	 * Mock client object.
+	 *
+	 * @var  Http
 	 */
 	protected $client;
 
 	/**
-	 * @var    Input  The input object to use in retrieving GET/POST data.
+	 * The input object to use in retrieving GET/POST data.
+	 *
+	 * @var  Input
 	 */
 	protected $input;
 
 	/**
-	 * @var    \Joomla\Application\AbstractWebApplication  The application object to send HTTP headers for redirects.
+	 * The application object to send HTTP headers for redirects.
+	 *
+	 * @var  WebInspector
 	 */
 	protected $application;
 
 	/**
-	 * @var    Client  Object under test.
+	 * Object under test.
+	 *
+	 * @var  Client
 	 */
 	protected $object;
 
@@ -67,9 +77,6 @@ class ClientTest extends PHPUnit_Framework_TestCase
 
 	/**
 	 * Tests the auth method
-	 *
-	 * @group   JOAuth2
-	 * @return  void
 	 */
 	public function testAuth()
 	{
@@ -87,7 +94,7 @@ class ClientTest extends PHPUnit_Framework_TestCase
 		$this->object->setOption('clientsecret', 'jeDs8rKw_jDJW8MMf-ff8ejs');
 		$this->input->set('code', '4/wEr_dK8SDkjfpwmc98KejfiwJP-f4wm.kdowmnr82jvmeisjw94mKFIJE48mcEM');
 
-		$this->http->expects($this->once())->method('post')->will($this->returnCallback('encodedGrantOauthCallback'));
+		$this->http->expects($this->once())->method('post')->will($this->returnCallback(array($this, 'encodedGrantOauthCallback')));
 		$result = $this->object->authenticate();
 		$this->assertEquals('accessvalue', $result['access_token']);
 		$this->assertEquals('refreshvalue', $result['refresh_token']);
@@ -97,9 +104,6 @@ class ClientTest extends PHPUnit_Framework_TestCase
 
 	/**
 	 * Tests the auth method with JSON data
-	 *
-	 * @group   JOAuth2
-	 * @return  void
 	 */
 	public function testAuthJson()
 	{
@@ -107,7 +111,7 @@ class ClientTest extends PHPUnit_Framework_TestCase
 		$this->object->setOption('clientsecret', 'jeDs8rKw_jDJW8MMf-ff8ejs');
 		$this->input->set('code', '4/wEr_dK8SDkjfpwmc98KejfiwJP-f4wm.kdowmnr82jvmeisjw94mKFIJE48mcEM');
 
-		$this->http->expects($this->once())->method('post')->will($this->returnCallback('jsonGrantOauthCallback'));
+		$this->http->expects($this->once())->method('post')->will($this->returnCallback(array($this, 'jsonGrantOauthCallback')));
 		$result = $this->object->authenticate();
 		$this->assertEquals('accessvalue', $result['access_token']);
 		$this->assertEquals('refreshvalue', $result['refresh_token']);
@@ -116,14 +120,11 @@ class ClientTest extends PHPUnit_Framework_TestCase
 	}
 
 	/**
-	 * Tests the isauth method
-	 *
-	 * @group   JOAuth2
-	 * @return  void
+	 * Tests the isAuth method
 	 */
 	public function testIsAuth()
 	{
-		$this->assertEquals(false, $this->object->isAuthenticated());
+		$this->assertFalse($this->object->isAuthenticated());
 
 		$token['access_token'] = 'accessvalue';
 		$token['refresh_token'] = 'refreshvalue';
@@ -141,10 +142,7 @@ class ClientTest extends PHPUnit_Framework_TestCase
 	}
 
 	/**
-	 * Tests the auth method
-	 *
-	 * @group   JOAuth2
-	 * @return  void
+	 * Tests the createUrl method
 	 */
 	public function testCreateUrl()
 	{
@@ -166,10 +164,7 @@ class ClientTest extends PHPUnit_Framework_TestCase
 	}
 
 	/**
-	 * Tests the auth method
-	 *
-	 * @group   JOAuth2
-	 * @return  void
+	 * Tests the query method
 	 */
 	public function testQuery()
 	{
@@ -185,13 +180,13 @@ class ClientTest extends PHPUnit_Framework_TestCase
 		$token['expires_in'] = 3600;
 		$this->object->setToken($token);
 
-		$this->http->expects($this->once())->method('post')->will($this->returnCallback('queryOauthCallback'));
+		$this->http->expects($this->once())->method('post')->willReturnCallback(array($this, 'queryOauthCallback'));
 		$result = $this->object->query('https://www.googleapis.com/auth/calendar', array('param' => 'value'), array(), 'post');
 		$this->assertEquals($result->body, 'Lorem ipsum dolor sit amet.');
 		$this->assertEquals(200, $result->code);
 
 		$this->object->setOption('authmethod', 'get');
-		$this->http->expects($this->once())->method('get')->will($this->returnCallback('getOauthCallback'));
+		$this->http->expects($this->once())->method('get')->willReturnCallback(array($this, 'getOauthCallback'));
 		$result = $this->object->query('https://www.googleapis.com/auth/calendar', array('param' => 'value'), array(), 'get');
 		$this->assertEquals($result->body, 'Lorem ipsum dolor sit amet.');
 		$this->assertEquals(200, $result->code);
@@ -199,87 +194,77 @@ class ClientTest extends PHPUnit_Framework_TestCase
 
 	/**
 	 * Tests the setOption method
-	 *
-	 * @group   JOAuth2
-	 * @return  void
 	 */
 	public function testSetOption()
 	{
 		$this->object->setOption('key', 'value');
 
-		$this->assertThat(
-			$this->options->get('key'),
-			$this->equalTo('value')
+		$this->assertEquals(
+			'value',
+			$this->options->get('key')
 		);
 	}
 
 	/**
 	 * Tests the getOption method
-	 *
-	 * @group   JOAuth2
-	 * @return  void
 	 */
 	public function testGetOption()
 	{
 		$this->options->set('key', 'value');
 
-		$this->assertThat(
-			$this->object->getOption('key'),
-			$this->equalTo('value')
+		$this->assertEquals(
+			'value',
+			$this->object->getOption('key')
+		);
+
+		$this->assertEquals(
+			'bar',
+			$this->object->getOption('foo', 'bar')
 		);
 	}
 
 	/**
 	 * Tests the setToken method
-	 *
-	 * @group   JOAuth2
-	 * @return  void
 	 */
 	public function testSetToken()
 	{
 		$this->object->setToken(array('access_token' => 'RANDOM STRING OF DATA'));
 
-		$this->assertThat(
-			$this->options->get('accesstoken'),
-			$this->equalTo(array('access_token' => 'RANDOM STRING OF DATA'))
+		$this->assertSame(
+			array('access_token' => 'RANDOM STRING OF DATA'),
+			$this->options->get('accesstoken')
 		);
 
 		$this->object->setToken(array('access_token' => 'RANDOM STRING OF DATA', 'expires_in' => 3600));
 
-		$this->assertThat(
-			$this->options->get('accesstoken'),
-			$this->equalTo(array('access_token' => 'RANDOM STRING OF DATA', 'expires_in' => 3600))
+		$this->assertSame(
+			array('access_token' => 'RANDOM STRING OF DATA', 'expires_in' => 3600),
+			$this->options->get('accesstoken')
 		);
 
 		$this->object->setToken(array('access_token' => 'RANDOM STRING OF DATA', 'expires' => 3600));
 
-		$this->assertThat(
-			$this->options->get('accesstoken'),
-			$this->equalTo(array('access_token' => 'RANDOM STRING OF DATA', 'expires_in' => 3600))
+		$this->assertSame(
+			array('access_token' => 'RANDOM STRING OF DATA', 'expires_in' => 3600),
+			$this->options->get('accesstoken')
 		);
 	}
 
 	/**
 	 * Tests the getToken method
-	 *
-	 * @group   JOAuth2
-	 * @return  void
 	 */
 	public function testGetToken()
 	{
 		$this->options->set('accesstoken', array('access_token' => 'RANDOM STRING OF DATA'));
 
-		$this->assertThat(
-			$this->object->getToken(),
-			$this->equalTo(array('access_token' => 'RANDOM STRING OF DATA'))
+		$this->assertSame(
+			array('access_token' => 'RANDOM STRING OF DATA'),
+			$this->object->getToken()
 		);
 	}
 
 	/**
 	 * Tests the refreshToken method
-	 *
-	 * @group   JOAuth2
-	 * @return  void
 	 */
 	public function testRefreshToken()
 	{
@@ -290,7 +275,7 @@ class ClientTest extends PHPUnit_Framework_TestCase
 		$this->object->setOption('userefresh', true);
 		$this->object->setToken(array('access_token' => 'RANDOM STRING OF DATA', 'expires' => 3600, 'refresh_token' => ' RANDOM STRING OF DATA'));
 
-		$this->http->expects($this->once())->method('post')->will($this->returnCallback('encodedGrantOauthCallback'));
+		$this->http->expects($this->once())->method('post')->willReturnCallback(array($this, 'encodedGrantOauthCallback'));
 		$result = $this->object->refreshToken();
 		$this->assertEquals('accessvalue', $result['access_token']);
 		$this->assertEquals('refreshvalue', $result['refresh_token']);
@@ -300,9 +285,6 @@ class ClientTest extends PHPUnit_Framework_TestCase
 
 	/**
 	 * Tests the refreshToken method with JSON
-	 *
-	 * @group   JOAuth2
-	 * @return  void
 	 */
 	public function testRefreshTokenJson()
 	{
@@ -313,102 +295,94 @@ class ClientTest extends PHPUnit_Framework_TestCase
 		$this->object->setOption('userefresh', true);
 		$this->object->setToken(array('access_token' => 'RANDOM STRING OF DATA', 'expires' => 3600, 'refresh_token' => ' RANDOM STRING OF DATA'));
 
-		$this->http->expects($this->once())->method('post')->will($this->returnCallback('jsonGrantOauthCallback'));
+		$this->http->expects($this->once())->method('post')->willReturnCallback(array($this, 'jsonGrantOauthCallback'));
 		$result = $this->object->refreshToken();
 		$this->assertEquals('accessvalue', $result['access_token']);
 		$this->assertEquals('refreshvalue', $result['refresh_token']);
 		$this->assertEquals(3600, $result['expires_in']);
 		$this->assertLessThanOrEqual(1, time() - $result['created']);
 	}
-}
 
-/**
- * Dummy
- *
- * @param   string   $url      Path to the resource.
- * @param   mixed    $data     Either an associative array or a string to be sent with the request.
- * @param   array    $headers  An array of name-value pairs to include in the header of the request
- * @param   integer  $timeout  Read timeout in seconds.
- *
- * @return  object
- *
- * @since   1.0
- */
-function encodedGrantOauthCallback($url, $data, array $headers = null, $timeout = null)
-{
-	$response = new stdClass;
+	/**
+	 * Callback to mock an encoded & granted OAuth response
+	 *
+	 * @param   string   $url      Path to the resource.
+	 * @param   mixed    $data     Either an associative array or a string to be sent with the request.
+	 * @param   array    $headers  An array of name-value pairs to include in the header of the request
+	 * @param   integer  $timeout  Read timeout in seconds.
+	 *
+	 * @return  object
+	 */
+	function encodedGrantOauthCallback($url, $data, array $headers = null, $timeout = null)
+	{
+		$response = new \stdClass;
 
-	$response->code = 200;
-	$response->headers = array('Content-Type' => 'x-www-form-urlencoded');
-	$response->body = 'access_token=accessvalue&refresh_token=refreshvalue&expires_in=3600';
+		$response->code = 200;
+		$response->headers = array('Content-Type' => 'x-www-form-urlencoded');
+		$response->body = 'access_token=accessvalue&refresh_token=refreshvalue&expires_in=3600';
 
-	return $response;
-}
+		return $response;
+	}
 
-/**
- * Dummy
- *
- * @param   string   $url      Path to the resource.
- * @param   mixed    $data     Either an associative array or a string to be sent with the request.
- * @param   array    $headers  An array of name-value pairs to include in the header of the request
- * @param   integer  $timeout  Read timeout in seconds.
- *
- * @return  object
- *
- * @since   1.0
- */
-function jsonGrantOauthCallback($url, $data, array $headers = null, $timeout = null)
-{
-	$response = new stdClass;
+	/**
+	 * Callback to mock a JSON based & granted OAuth response
+	 *
+	 * @param   string   $url      Path to the resource.
+	 * @param   mixed    $data     Either an associative array or a string to be sent with the request.
+	 * @param   array    $headers  An array of name-value pairs to include in the header of the request
+	 * @param   integer  $timeout  Read timeout in seconds.
+	 *
+	 * @return  object
+	 */
+	function jsonGrantOauthCallback($url, $data, array $headers = null, $timeout = null)
+	{
+		$response = new \stdClass;
 
-	$response->code = 200;
-	$response->headers = array('Content-Type' => 'application/json');
-	$response->body = '{"access_token":"accessvalue","refresh_token":"refreshvalue","expires_in":3600}';
+		$response->code = 200;
+		$response->headers = array('Content-Type' => 'application/json');
+		$response->body = '{"access_token":"accessvalue","refresh_token":"refreshvalue","expires_in":3600}';
 
-	return $response;
-}
+		return $response;
+	}
 
-/**
- * Dummy
- *
- * @param   string   $url      Path to the resource.
- * @param   mixed    $data     Either an associative array or a string to be sent with the request.
- * @param   array    $headers  An array of name-value pairs to include in the header of the request
- * @param   integer  $timeout  Read timeout in seconds.
- *
- * @return  object
- *
- * @since   1.0
- */
-function queryOauthCallback($url, $data, array $headers = null, $timeout = null)
-{
-	$response = new stdClass;
+	/**
+	 * Callback to mock a query based OAuth response
+	 *
+	 * @param   string   $url      Path to the resource.
+	 * @param   mixed    $data     Either an associative array or a string to be sent with the request.
+	 * @param   array    $headers  An array of name-value pairs to include in the header of the request
+	 * @param   integer  $timeout  Read timeout in seconds.
+	 *
+	 * @return  object
+	 */
+	function queryOauthCallback($url, $data, array $headers = null, $timeout = null)
+	{
+		$response = new \stdClass;
 
-	$response->code = 200;
-	$response->headers = array('Content-Type' => 'text/html');
-	$response->body = 'Lorem ipsum dolor sit amet.';
+		$response->code = 200;
+		$response->headers = array('Content-Type' => 'text/html');
+		$response->body = 'Lorem ipsum dolor sit amet.';
 
-	return $response;
-}
+		return $response;
+	}
 
-/**
- * Dummy
- *
- * @param   string   $url      Path to the resource.
- * @param   array    $headers  An array of name-value pairs to include in the header of the request.
- * @param   integer  $timeout  Read timeout in seconds.
- *
- * @return  object
- *
- * @since   1.0
- */
-function getOauthCallback($url, array $headers = null, $timeout = null)
-{
-	$response = new stdClass;
+	/**
+	 * Callback to mock a OAuth response
+	 *
+	 * @param   string   $url      Path to the resource.
+	 * @param   array    $headers  An array of name-value pairs to include in the header of the request.
+	 * @param   integer  $timeout  Read timeout in seconds.
+	 *
+	 * @return  object
+	 */
+	function getOauthCallback($url, array $headers = null, $timeout = null)
+	{
+		$response = new \stdClass;
 
-	$response->code = 200;
-	$response->headers = array('Content-Type' => 'text/html');
-	$response->body = 'Lorem ipsum dolor sit amet.';
+		$response->code = 200;
+		$response->headers = array('Content-Type' => 'text/html');
+		$response->body = 'Lorem ipsum dolor sit amet.';
 
-	return $response;
+		return $response;
+	}
 }
