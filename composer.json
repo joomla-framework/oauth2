@@ -6,15 +6,16 @@
     "homepage": "https://github.com/joomla-framework/oauth2",
     "license": "GPL-2.0+",
     "require": {
-        "php": ">=5.3.10",
-        "joomla/application": "2.0.*@dev",
+        "php": ">=5.4|>=7.0",
+        "joomla/application": "~2.0@dev",
         "joomla/http": "~1.0",
-        "joomla/input": "~1.0"
+        "joomla/input": "~1.0",
+        "joomla/session": "~2.0@dev"
     },
     "require-dev": {
         "joomla/test": "~1.0",
-        "joomla/registry": "2.0.*@dev",
-        "phpunit/phpunit": "4.*",
+        "joomla/registry": "~2.0@dev",
+        "phpunit/phpunit": "~4.8|~5.0",
         "squizlabs/php_codesniffer": "1.*"
     },
     "autoload": {
