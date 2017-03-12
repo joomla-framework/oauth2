@@ -11,6 +11,7 @@ use Joomla\Http\Http;
 use Joomla\Input\Input;
 use Joomla\Registry\Registry;
 use Joomla\Test\WebInspector;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Test class for \Joomla\OAuth2\Client.
