@@ -16,7 +16,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Test class for \Joomla\OAuth2\Client.
  */
-class ClientTest extends \PHPUnit_Framework_TestCase
+class ClientTest extends TestCase
 {
 	/**
 	 * Options for the Client object.
