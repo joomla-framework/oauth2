@@ -14,7 +14,7 @@
     },
     "require-dev": {
         "joomla/coding-standards": "~2.0@alpha",
-        "phpunit/phpunit": "~6.0"
+        "phpunit/phpunit": "~6.3"
     },
     "autoload": {
         "psr-4": {
