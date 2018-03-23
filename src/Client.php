@@ -13,6 +13,7 @@ use Joomla\Http\Exception\UnexpectedResponseException;
 use Joomla\Http\HttpFactory;
 use Joomla\Http\Http;
 use Joomla\Input\Input;
+use Joomla\Uri\Uri;
 
 /**
  * Joomla Framework class for interacting with an OAuth 2.0 server.
@@ -179,36 +180,35 @@ class Client
 			throw new \InvalidArgumentException('Authorization URL and client_id are required');
 		}
 
-		$url = $this->getOption('authurl');
-		$url .= (strpos($url, '?') !== false) ? '&' : '?';
-		$url .= 'response_type=code';
-		$url .= '&client_id=' . urlencode($this->getOption('clientid'));
+		$url = new Uri($this->getOption('authurl'));
+		$url->setVar('response_type', 'code');
+		$url->setVar('client_id', urlencode($this->getOption('clientid')));
 
-		if ($this->getOption('redirecturi'))
+		if ($redirect = $this->getOption('redirecturi'))
 		{
-			$url .= '&redirect_uri=' . urlencode($this->getOption('redirecturi'));
+			$url->setVar('redirect_uri', urlencode($redirect));
 		}
 
-		if ($this->getOption('scope'))
+		if ($scope = $this->getOption('scope'))
 		{
-			$scope = is_array($this->getOption('scope')) ? implode(' ', $this->getOption('scope')) : $this->getOption('scope');
-			$url .= '&scope=' . urlencode($scope);
+			$scope = is_array($scope) ? implode(' ', $scope) : $scope;
+			$url->setVar('scope', urlencode($scope));
 		}
 
-		if ($this->getOption('state'))
+		if ($state = $this->getOption('state'))
 		{
-			$url .= '&state=' . urlencode($this->getOption('state'));
+			$url->setVar('state', urlencode($state));
 		}
 
 		if (is_array($this->getOption('requestparams')))
 		{
 			foreach ($this->getOption('requestparams') as $key => $value)
 			{
-				$url .= '&' . $key . '=' . urlencode($value);
+				$url->setVar($key, urlencode($value));
 			}
 		}
 
-		return $url;
+		return (string) $url;
 	}
 
 	/**
@@ -240,23 +240,15 @@ class Client
 			$token = $this->refreshToken($token['refresh_token']);
 		}
 
+		$url = new Uri($url);
+
 		if (!$this->getOption('authmethod') || $this->getOption('authmethod') == 'bearer')
 		{
 			$headers['Authorization'] = 'Bearer ' . $token['access_token'];
 		}
 		elseif ($this->getOption('authmethod') == 'get')
 		{
-			if (strpos($url, '?'))
-			{
-				$url .= '&';
-			}
-			else
-			{
-				$url .= '?';
-			}
-
-			$url .= $this->getOption('getparam') ? $this->getOption('getparam') : 'access_token';
-			$url .= '=' . $token['access_token'];
+			$url->setVar($this->getOption('getparam', 'access_token'), $token['access_token']);
 		}
 
 		switch ($method)
