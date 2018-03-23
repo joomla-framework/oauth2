@@ -84,6 +84,7 @@ class Client
 	 * @return  string  The access token
 	 *
 	 * @since   1.0
+	 * @throws  UnexpectedResponseException
 	 * @throws  \RuntimeException
 	 */
 	public function authenticate()
@@ -101,8 +102,14 @@ class Client
 
 			if (!($response->code >= 200 && $response->code < 400))
 			{
-				// As of 2.0 this will throw an UnexpectedResponseException
-				throw new \RuntimeException('Error code ' . $response->code . ' received requesting access token: ' . $response->body . '.');
+				throw new UnexpectedResponseException(
+					$response,
+					sprintf(
+						'Error code %s received requesting access token: %s.',
+						$response->code,
+						$response->body
+					)
+				);
 			}
 
 			if (strpos($response->headers['Content-Type'], 'application/json') !== false)
@@ -273,8 +280,14 @@ class Client
 
 		if ($response->code < 200 || $response->code >= 400)
 		{
-			// As of 2.0 this will throw an UnexpectedResponseException
-			throw new \RuntimeException('Error code ' . $response->code . ' received requesting data: ' . $response->body . '.');
+			throw new UnexpectedResponseException(
+				$response,
+				sprintf(
+					'Error code %s received requesting data: %s.',
+					$response->code,
+					$response->body
+				)
+			);
 		}
 
 		return $response;
