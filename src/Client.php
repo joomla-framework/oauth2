@@ -73,9 +73,9 @@ class Client
 			);
 		}
 
-		$this->options = $options;
-		$this->http = $http ?: HttpFactory::getHttp($this->options);
-		$this->input = $input ?: ($application ? $application->input : new Input);
+		$this->options     = $options;
+		$this->http        = $http ?: HttpFactory::getHttp($this->options);
+		$this->input       = $input ?: ($application ? $application->input : new Input);
 		$this->application = $application;
 	}
 
@@ -258,12 +258,14 @@ class Client
 			case 'delete':
 			case 'trace':
 				$response = $this->http->$method($url, $headers, $timeout);
+
 				break;
 
 			case 'post':
 			case 'put':
 			case 'patch':
 				$response = $this->http->$method($url, $data, $headers, $timeout);
+
 				break;
 
 			default:
