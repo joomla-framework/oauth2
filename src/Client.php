@@ -10,8 +10,8 @@ namespace Joomla\OAuth2;
 
 use Joomla\Application\AbstractWebApplication;
 use Joomla\Http\Exception\UnexpectedResponseException;
-use Joomla\Http\HttpFactory;
 use Joomla\Http\Http;
+use Joomla\Http\HttpFactory;
 use Joomla\Input\Input;
 use Joomla\Uri\Uri;
 
@@ -64,9 +64,9 @@ class Client
 	 *
 	 * @since   1.0
 	 */
-	public function __construct($options = array(), Http $http = null, Input $input = null, AbstractWebApplication $application = null)
+	public function __construct($options = [], Http $http = null, Input $input = null, AbstractWebApplication $application = null)
 	{
-		if (!is_array($options) && !($options instanceof \ArrayAccess))
+		if (!\is_array($options) && !($options instanceof \ArrayAccess))
 		{
 			throw new \InvalidArgumentException(
 				'The options param must be an array or implement the ArrayAccess interface.'
@@ -92,12 +92,12 @@ class Client
 	{
 		if ($data['code'] = $this->input->get('code', false, 'raw'))
 		{
-			$data = array(
+			$data = [
 				'grant_type'    => 'authorization_code',
 				'redirect_uri'  => $this->getOption('redirecturi'),
 				'client_id'     => $this->getOption('clientid'),
 				'client_secret' => $this->getOption('clientsecret'),
-			);
+			];
 
 			$response = $this->http->post($this->getOption('tokenurl'), $data);
 
@@ -115,12 +115,12 @@ class Client
 
 			if (strpos($response->headers['Content-Type'], 'application/json') !== false)
 			{
-				$token = array_merge(json_decode($response->body, true), array('created' => time()));
+				$token = array_merge(json_decode($response->body, true), ['created' => time()]);
 			}
 			else
 			{
 				parse_str($response->body, $token);
-				$token = array_merge($token, array('created' => time()));
+				$token = array_merge($token, ['created' => time()]);
 			}
 
 			$this->setToken($token);
@@ -226,7 +226,7 @@ class Client
 	 * @throws  \InvalidArgumentException
 	 * @throws  \RuntimeException
 	 */
-	public function query($url, $data = null, $headers = array(), $method = 'get', $timeout = null)
+	public function query($url, $data = null, $headers = [], $method = 'get', $timeout = null)
 	{
 		$token = $this->getToken();
 
@@ -383,12 +383,12 @@ class Client
 			$token = $token['refresh_token'];
 		}
 
-		$data = array(
+		$data = [
 			'grant_type'    => 'refresh_token',
 			'refresh_token' => $token,
 			'client_id'     => $this->getOption('clientid'),
 			'client_secret' => $this->getOption('clientsecret'),
-		);
+		];
 
 		$response = $this->http->post($this->getOption('tokenurl'), $data);
 
@@ -406,12 +406,12 @@ class Client
 
 		if (strpos($response->headers['Content-Type'], 'application/json') !== false)
 		{
-			$token = array_merge(json_decode($response->body, true), array('created' => time()));
+			$token = array_merge(json_decode($response->body, true), ['created' => time()]);
 		}
 		else
 		{
 			parse_str($response->body, $token);
-			$token = array_merge($token, array('created' => time()));
+			$token = array_merge($token, ['created' => time()]);
 		}
 
 		$this->setToken($token);
