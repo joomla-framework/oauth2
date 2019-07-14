@@ -11,10 +11,13 @@ use Joomla\Http\Http;
 use Joomla\Input\Input;
 use Joomla\OAuth2\Client;
 use Joomla\Registry\Registry;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Test class for \Joomla\OAuth2\Client.
+ *
+ * @backupGlobals enabled
  */
 class ClientTest extends TestCase
 {
@@ -28,7 +31,7 @@ class ClientTest extends TestCase
 	/**
 	 * Mock client object.
 	 *
-	 * @var  Http
+	 * @var  Http|MockObject
 	 */
 	protected $client;
 
@@ -42,7 +45,7 @@ class ClientTest extends TestCase
 	/**
 	 * The application object to send HTTP headers for redirects.
 	 *
-	 * @var  AbstractWebApplication|\PHPUnit_Framework_MockObject_MockObject
+	 * @var  AbstractWebApplication|MockObject
 	 */
 	protected $application;
 
@@ -59,7 +62,7 @@ class ClientTest extends TestCase
 	 *
 	 * @return  void
 	 */
-	protected function setUp()
+	protected function setUp(): void
 	{
 		parent::setUp();
 
@@ -69,18 +72,17 @@ class ClientTest extends TestCase
 		$_SERVER['SCRIPT_NAME'] = '/index.php';
 
 		$this->options = new Registry;
-		$this->http = $this->getMockBuilder('Joomla\Http\Http')->getMock();
-		$array = array();
-		$this->input = new Input($array);
+		$this->http    = $this->createMock(Http::class);
+		$this->input   = new Input([]);
 
 		$this->application = $this->getMockForAbstractClass(
-			'Joomla\Application\AbstractWebApplication',
-			array(),
+			AbstractWebApplication::class,
+			[],
 			'',
 			true,
 			true,
 			true,
-			array('redirect')
+			['redirect']
 		);
 
 		$this->object = new Client($this->options, $this->http, $this->input, $this->application);
@@ -93,9 +95,9 @@ class ClientTest extends TestCase
 	{
 		$this->object->setOption('authurl', 'https://accounts.google.com/o/oauth2/auth');
 		$this->object->setOption('clientid', '01234567891011.apps.googleusercontent.com');
-		$this->object->setOption('scope', array('https://www.googleapis.com/auth/adsense', 'https://www.googleapis.com/auth/calendar'));
+		$this->object->setOption('scope', ['https://www.googleapis.com/auth/adsense', 'https://www.googleapis.com/auth/calendar']);
 		$this->object->setOption('redirecturi', 'http://localhost/oauth');
-		$this->object->setOption('requestparams', array('access_type' => 'offline', 'approval_prompt' => 'auto'));
+		$this->object->setOption('requestparams', ['access_type' => 'offline', 'approval_prompt' => 'auto']);
 		$this->object->setOption('sendheaders', true);
 
 		$this->application->expects($this->any())
@@ -108,8 +110,12 @@ class ClientTest extends TestCase
 		$this->object->setOption('clientsecret', 'jeDs8rKw_jDJW8MMf-ff8ejs');
 		$this->input->set('code', '4/wEr_dK8SDkjfpwmc98KejfiwJP-f4wm.kdowmnr82jvmeisjw94mKFIJE48mcEM');
 
-		$this->http->expects($this->once())->method('post')->will($this->returnCallback(array($this, 'encodedGrantOauthCallback')));
+		$this->http->expects($this->once())
+			->method('post')
+			->willReturnCallback([$this, 'encodedGrantOauthCallback']);
+
 		$result = $this->object->authenticate();
+
 		$this->assertEquals('accessvalue', $result['access_token']);
 		$this->assertEquals('refreshvalue', $result['refresh_token']);
 		$this->assertEquals(3600, $result['expires_in']);
@@ -125,8 +131,12 @@ class ClientTest extends TestCase
 		$this->object->setOption('clientsecret', 'jeDs8rKw_jDJW8MMf-ff8ejs');
 		$this->input->set('code', '4/wEr_dK8SDkjfpwmc98KejfiwJP-f4wm.kdowmnr82jvmeisjw94mKFIJE48mcEM');
 
-		$this->http->expects($this->once())->method('post')->will($this->returnCallback(array($this, 'jsonGrantOauthCallback')));
+		$this->http->expects($this->once())
+			->method('post')
+			->willReturnCallback([$this, 'encodedGrantOauthCallback']);
+
 		$result = $this->object->authenticate();
+
 		$this->assertEquals('accessvalue', $result['access_token']);
 		$this->assertEquals('refreshvalue', $result['refresh_token']);
 		$this->assertEquals(3600, $result['expires_in']);
@@ -162,12 +172,12 @@ class ClientTest extends TestCase
 	{
 		$this->object->setOption('authurl', 'https://accounts.google.com/o/oauth2/auth');
 		$this->object->setOption('clientid', '01234567891011.apps.googleusercontent.com');
-		$this->object->setOption('scope', array('https://www.googleapis.com/auth/adsense', 'https://www.googleapis.com/auth/calendar'));
+		$this->object->setOption('scope', ['https://www.googleapis.com/auth/adsense', 'https://www.googleapis.com/auth/calendar']);
 		$this->object->setOption('state', '123456');
 		$this->object->setOption('redirecturi', 'http://localhost/oauth');
-		$this->object->setOption('requestparams', array('access_type' => 'offline', 'approval_prompt' => 'auto'));
+		$this->object->setOption('requestparams', ['access_type' => 'offline', 'approval_prompt' => 'auto']);
 
-		$url = $this->object->createUrl();
+		$url      = $this->object->createUrl();
 		$expected = 'https://accounts.google.com/o/oauth2/auth?response_type=code';
 		$expected .= '&client_id=01234567891011.apps.googleusercontent.com';
 		$expected .= '&redirect_uri=http%3A%2F%2Flocalhost%2Foauth';
@@ -182,26 +192,34 @@ class ClientTest extends TestCase
 	 */
 	public function testQuery()
 	{
-		$token['access_token'] = 'accessvalue';
+		$token['access_token']  = 'accessvalue';
 		$token['refresh_token'] = 'refreshvalue';
-		$token['created'] = time() - 1800;
-		$token['expires_in'] = 600;
+		$token['created']       = time() - 1800;
+		$token['expires_in']    = 600;
 		$this->object->setToken($token);
 
-		$result = $this->object->query('https://www.googleapis.com/auth/calendar', array('param' => 'value'), array(), 'get');
+		$result = $this->object->query('https://www.googleapis.com/auth/calendar', ['param' => 'value'], [], 'get');
 		$this->assertFalse($result);
 
 		$token['expires_in'] = 3600;
 		$this->object->setToken($token);
 
-		$this->http->expects($this->once())->method('post')->willReturnCallback(array($this, 'queryOauthCallback'));
-		$result = $this->object->query('https://www.googleapis.com/auth/calendar', array('param' => 'value'), array(), 'post');
+		$this->http->expects($this->once())
+			->method('post')
+			->willReturnCallback([$this, 'queryOauthCallback']);
+
+		$result = $this->object->query('https://www.googleapis.com/auth/calendar', ['param' => 'value'], [], 'post');
+
 		$this->assertEquals($result->body, 'Lorem ipsum dolor sit amet.');
 		$this->assertEquals(200, $result->code);
 
 		$this->object->setOption('authmethod', 'get');
-		$this->http->expects($this->once())->method('get')->willReturnCallback(array($this, 'getOauthCallback'));
-		$result = $this->object->query('https://www.googleapis.com/auth/calendar', array('param' => 'value'), array(), 'get');
+		$this->http->expects($this->once())
+			->method('get')
+			->willReturnCallback([$this, 'getOauthCallback']);
+
+		$result = $this->object->query('https://www.googleapis.com/auth/calendar', ['param' => 'value'], [], 'get');
+
 		$this->assertEquals($result->body, 'Lorem ipsum dolor sit amet.');
 		$this->assertEquals(200, $result->code);
 	}
@@ -242,24 +260,24 @@ class ClientTest extends TestCase
 	 */
 	public function testSetToken()
 	{
-		$this->object->setToken(array('access_token' => 'RANDOM STRING OF DATA'));
+		$this->object->setToken(['access_token' => 'RANDOM STRING OF DATA']);
 
 		$this->assertSame(
-			array('access_token' => 'RANDOM STRING OF DATA'),
+			['access_token' => 'RANDOM STRING OF DATA'],
 			$this->options->get('accesstoken')
 		);
 
-		$this->object->setToken(array('access_token' => 'RANDOM STRING OF DATA', 'expires_in' => 3600));
+		$this->object->setToken(['access_token' => 'RANDOM STRING OF DATA', 'expires_in' => 3600]);
 
 		$this->assertSame(
-			array('access_token' => 'RANDOM STRING OF DATA', 'expires_in' => 3600),
+			['access_token' => 'RANDOM STRING OF DATA', 'expires_in' => 3600],
 			$this->options->get('accesstoken')
 		);
 
-		$this->object->setToken(array('access_token' => 'RANDOM STRING OF DATA', 'expires' => 3600));
+		$this->object->setToken(['access_token' => 'RANDOM STRING OF DATA', 'expires' => 3600]);
 
 		$this->assertSame(
-			array('access_token' => 'RANDOM STRING OF DATA', 'expires_in' => 3600),
+			['access_token' => 'RANDOM STRING OF DATA', 'expires_in' => 3600],
 			$this->options->get('accesstoken')
 		);
 	}
@@ -269,10 +287,10 @@ class ClientTest extends TestCase
 	 */
 	public function testGetToken()
 	{
-		$this->options->set('accesstoken', array('access_token' => 'RANDOM STRING OF DATA'));
+		$this->options->set('accesstoken', ['access_token' => 'RANDOM STRING OF DATA']);
 
 		$this->assertSame(
-			array('access_token' => 'RANDOM STRING OF DATA'),
+			['access_token' => 'RANDOM STRING OF DATA'],
 			$this->object->getToken()
 		);
 	}
@@ -287,10 +305,14 @@ class ClientTest extends TestCase
 		$this->object->setOption('clientsecret', 'jeDs8rKw_jDJW8MMf-ff8ejs');
 		$this->object->setOption('redirecturi', 'http://localhost/oauth');
 		$this->object->setOption('userefresh', true);
-		$this->object->setToken(array('access_token' => 'RANDOM STRING OF DATA', 'expires' => 3600, 'refresh_token' => ' RANDOM STRING OF DATA'));
+		$this->object->setToken(['access_token' => 'RANDOM STRING OF DATA', 'expires' => 3600, 'refresh_token' => ' RANDOM STRING OF DATA']);
 
-		$this->http->expects($this->once())->method('post')->willReturnCallback(array($this, 'encodedGrantOauthCallback'));
+		$this->http->expects($this->once())
+			->method('post')
+			->willReturnCallback([$this, 'encodedGrantOauthCallback']);
+
 		$result = $this->object->refreshToken();
+
 		$this->assertEquals('accessvalue', $result['access_token']);
 		$this->assertEquals('refreshvalue', $result['refresh_token']);
 		$this->assertEquals(3600, $result['expires_in']);
@@ -307,10 +329,14 @@ class ClientTest extends TestCase
 		$this->object->setOption('clientsecret', 'jeDs8rKw_jDJW8MMf-ff8ejs');
 		$this->object->setOption('redirecturi', 'http://localhost/oauth');
 		$this->object->setOption('userefresh', true);
-		$this->object->setToken(array('access_token' => 'RANDOM STRING OF DATA', 'expires' => 3600, 'refresh_token' => ' RANDOM STRING OF DATA'));
+		$this->object->setToken(['access_token' => 'RANDOM STRING OF DATA', 'expires' => 3600, 'refresh_token' => ' RANDOM STRING OF DATA']);
 
-		$this->http->expects($this->once())->method('post')->willReturnCallback(array($this, 'jsonGrantOauthCallback'));
+		$this->http->expects($this->once())
+			->method('post')
+			->willReturnCallback([$this, 'jsonGrantOauthCallback']);
+
 		$result = $this->object->refreshToken();
+
 		$this->assertEquals('accessvalue', $result['access_token']);
 		$this->assertEquals('refreshvalue', $result['refresh_token']);
 		$this->assertEquals(3600, $result['expires_in']);
@@ -327,13 +353,13 @@ class ClientTest extends TestCase
 	 *
 	 * @return  object
 	 */
-	function encodedGrantOauthCallback($url, $data, array $headers = null, $timeout = null)
+	public function encodedGrantOauthCallback($url, $data, array $headers = null, $timeout = null)
 	{
 		$response = new \stdClass;
 
-		$response->code = 200;
-		$response->headers = array('Content-Type' => 'x-www-form-urlencoded');
-		$response->body = 'access_token=accessvalue&refresh_token=refreshvalue&expires_in=3600';
+		$response->code    = 200;
+		$response->headers = ['Content-Type' => 'x-www-form-urlencoded'];
+		$response->body    = 'access_token=accessvalue&refresh_token=refreshvalue&expires_in=3600';
 
 		return $response;
 	}
@@ -348,13 +374,13 @@ class ClientTest extends TestCase
 	 *
 	 * @return  object
 	 */
-	function jsonGrantOauthCallback($url, $data, array $headers = null, $timeout = null)
+	public function jsonGrantOauthCallback($url, $data, array $headers = null, $timeout = null)
 	{
 		$response = new \stdClass;
 
-		$response->code = 200;
-		$response->headers = array('Content-Type' => 'application/json');
-		$response->body = '{"access_token":"accessvalue","refresh_token":"refreshvalue","expires_in":3600}';
+		$response->code    = 200;
+		$response->headers = ['Content-Type' => 'application/json'];
+		$response->body    = '{"access_token":"accessvalue","refresh_token":"refreshvalue","expires_in":3600}';
 
 		return $response;
 	}
@@ -369,13 +395,13 @@ class ClientTest extends TestCase
 	 *
 	 * @return  object
 	 */
-	function queryOauthCallback($url, $data, array $headers = null, $timeout = null)
+	public function queryOauthCallback($url, $data, array $headers = null, $timeout = null)
 	{
 		$response = new \stdClass;
 
-		$response->code = 200;
-		$response->headers = array('Content-Type' => 'text/html');
-		$response->body = 'Lorem ipsum dolor sit amet.';
+		$response->code    = 200;
+		$response->headers = ['Content-Type' => 'text/html'];
+		$response->body    = 'Lorem ipsum dolor sit amet.';
 
 		return $response;
 	}
@@ -389,13 +415,13 @@ class ClientTest extends TestCase
 	 *
 	 * @return  object
 	 */
-	function getOauthCallback($url, array $headers = null, $timeout = null)
+	public function getOauthCallback($url, array $headers = null, $timeout = null)
 	{
 		$response = new \stdClass;
 
-		$response->code = 200;
-		$response->headers = array('Content-Type' => 'text/html');
-		$response->body = 'Lorem ipsum dolor sit amet.';
+		$response->code    = 200;
+		$response->headers = ['Content-Type' => 'text/html'];
+		$response->body    = 'Lorem ipsum dolor sit amet.';
 
 		return $response;
 	}
