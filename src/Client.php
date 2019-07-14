@@ -82,7 +82,7 @@ class Client
 	/**
 	 * Get the access token or redirect to the authentication URL.
 	 *
-	 * @return  string  The access token
+	 * @return  array|boolean  The access token or false on failure
 	 *
 	 * @since   1.0
 	 * @throws  UnexpectedResponseException
