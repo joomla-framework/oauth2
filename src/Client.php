@@ -8,7 +8,7 @@
 
 namespace Joomla\OAuth2;
 
-use Joomla\Application\AbstractWebApplication;
+use Joomla\Application\WebApplicationInterface;
 use Joomla\Http\Exception\UnexpectedResponseException;
 use Joomla\Http\Http;
 use Joomla\Http\HttpFactory;
@@ -49,7 +49,7 @@ class Client
 	/**
 	 * The application object to send HTTP headers for redirects.
 	 *
-	 * @var    AbstractWebApplication
+	 * @var    WebApplicationInterface
 	 * @since  1.0
 	 */
 	protected $application;
@@ -57,14 +57,14 @@ class Client
 	/**
 	 * Constructor.
 	 *
-	 * @param   array|\ArrayAccess      $options      OAuth2 Client options object
-	 * @param   Http                    $http         The HTTP client object
-	 * @param   Input                   $input        The input object
-	 * @param   AbstractWebApplication  $application  The application object
+	 * @param   array|\ArrayAccess       $options      OAuth2 Client options object
+	 * @param   Http                     $http         The HTTP client object
+	 * @param   Input                    $input        The input object
+	 * @param   WebApplicationInterface  $application  The application object
 	 *
 	 * @since   1.0
 	 */
-	public function __construct($options = [], Http $http = null, Input $input = null, AbstractWebApplication $application = null)
+	public function __construct($options = [], Http $http = null, Input $input = null, WebApplicationInterface $application = null)
 	{
 		if (!\is_array($options) && !($options instanceof \ArrayAccess))
 		{
@@ -130,9 +130,11 @@ class Client
 
 		if ($this->getOption('sendheaders'))
 		{
-			if (!($this->application instanceof AbstractWebApplication))
+			if (!($this->application instanceof WebApplicationInterface))
 			{
-				throw new \RuntimeException('AbstractWebApplication object required for authentication process.');
+				throw new \RuntimeException(
+					\sprintf('A "%s" implementation is required to process authentication.', WebApplicationInterface::class)
+				);
 			}
 
 			$this->application->redirect($this->createUrl());

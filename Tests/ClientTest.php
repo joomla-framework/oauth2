@@ -6,7 +6,7 @@
 
 namespace Joomla\OAuth2\Tests;
 
-use Joomla\Application\AbstractWebApplication;
+use Joomla\Application\WebApplicationInterface;
 use Joomla\Http\Http;
 use Joomla\Input\Input;
 use Joomla\OAuth2\Client;
@@ -45,7 +45,7 @@ class ClientTest extends TestCase
 	/**
 	 * The application object to send HTTP headers for redirects.
 	 *
-	 * @var  AbstractWebApplication|MockObject
+	 * @var  WebApplicationInterface|MockObject
 	 */
 	protected $application;
 
@@ -75,15 +75,7 @@ class ClientTest extends TestCase
 		$this->http    = $this->createMock(Http::class);
 		$this->input   = new Input([]);
 
-		$this->application = $this->getMockForAbstractClass(
-			AbstractWebApplication::class,
-			[],
-			'',
-			true,
-			true,
-			true,
-			['redirect']
-		);
+		$this->application = $this->createMock(WebApplicationInterface::class);
 
 		$this->object = new Client($this->options, $this->http, $this->input, $this->application);
 	}
