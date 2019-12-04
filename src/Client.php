@@ -75,7 +75,7 @@ class Client
 
 		$this->options     = $options;
 		$this->http        = $http ?: HttpFactory::getHttp($this->options);
-		$this->input       = $input ?: ($application ? $application->input : new Input);
+		$this->input       = $input ?: ($application ? $application->getInput() : new Input);
 		$this->application = $application;
 	}
 
