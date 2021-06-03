@@ -21,8 +21,8 @@ class Callback
 	 */
 	public static function encodedGrantOauthCallback($url, $data, array $headers = null, $timeout = null)
 	{
-		return new Response(
-			self::toStream('access_token=accessvalue&refresh_token=refreshvalue&expires_in=3600'),
+		return self::createResponse(
+			'access_token=accessvalue&refresh_token=refreshvalue&expires_in=3600',
 			200,
 			array('Content-Type' => 'x-www-form-urlencoded')
 		);
@@ -42,8 +42,8 @@ class Callback
 	 */
 	public static function jsonGrantOauthCallback($url, $data, array $headers = null, $timeout = null)
 	{
-		return new Response(
-			self::toStream('{"access_token":"accessvalue","refresh_token":"refreshvalue","expires_in":3600}'),
+		return self::createResponse(
+			'{"access_token":"accessvalue","refresh_token":"refreshvalue","expires_in":3600}',
 			200,
 			array('Content-Type' => 'application/json')
 		);
@@ -63,8 +63,8 @@ class Callback
 	 */
 	public static function queryOauthCallback($url, $data, array $headers = null, $timeout = null)
 	{
-		return new Response(
-			self::toStream('Lorem ipsum dolor sit amet.'),
+		return self::createResponse(
+			'Lorem ipsum dolor sit amet.',
 			200,
 			array('Content-Type' => 'text/html')
 		);
@@ -83,8 +83,8 @@ class Callback
 	 */
 	public static function getOauthCallback($url, array $headers = null, $timeout = null)
 	{
-		return new Response(
-			self::toStream('Lorem ipsum dolor sit amet.'),
+		return self::createResponse(
+			'Lorem ipsum dolor sit amet.',
 			200,
 			array('Content-Type' => 'text/html')
 		);
@@ -102,5 +102,23 @@ class Callback
 		rewind($stream);
 
 		return $stream;
+	}
+
+	private static function createResponse($body, $status, $headers)
+	{
+		$response = new Response(
+			self::toStream('Lorem ipsum dolor sit amet.'),
+			200,
+			array('Content-Type' => 'text/html')
+		);
+
+		if (!method_exists($response, 'getHeaderLine'))
+		{
+			$response->body = $body;
+			$response->code = $status;
+			$response->headers = $headers;
+		}
+
+		return $response;
 	}
 }
