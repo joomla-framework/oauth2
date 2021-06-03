@@ -74,7 +74,7 @@ class Client
 	 */
 	public function authenticate()
 	{
-		if ($data['code'] = $this->input->get('code', false, 'raw'))
+		if ($code = $this->input->get('code', false, 'raw'))
 		{
 			$data = array(
 				'grant_type'    => 'authorization_code',
@@ -85,12 +85,9 @@ class Client
 
 			$response = $this->http->post($this->getOption('tokenurl'), $data);
 
-			// Make sure all headers are lowercase
-			$response->headers = array_change_key_case($response->headers, CASE_LOWER);
-
 			if ($response->code >= 200 && $response->code < 400)
 			{
-				if (strpos($response->headers['content-type'], 'application/json') !== false)
+				if (strpos($response->getHeaderLine('content-type'), 'application/json') !== false)
 				{
 					$token = array_merge(json_decode($response->body, true), array('created' => time()));
 				}
@@ -99,7 +96,6 @@ class Client
 					parse_str($response->body, $token);
 					$token = array_merge($token, array('created' => time()));
 				}
-
 				$this->setToken($token);
 
 				return $token;
@@ -386,12 +382,9 @@ class Client
 
 		$response = $this->http->post($this->getOption('tokenurl'), $data);
 
-		// Make sure all headers are lowercase
-		$response->headers = array_change_key_case($response->headers, CASE_LOWER);
-
 		if ($response->code >= 200 || $response->code < 400)
 		{
-			if (strpos($response->headers['content-type'], 'application/json') !== false)
+			if (strpos($response->getHeaderLine('content-type'), 'application/json') !== false)
 			{
 				$token = array_merge(json_decode($response->body, true), array('created' => time()));
 			}
