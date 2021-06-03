@@ -440,7 +440,7 @@ class Client
 				function ($carry, $header) use ($headers) {
 					if (strtolower($header) === 'content-type')
 					{
-						return implode(',', $headers[$header]);
+						return implode(',', (array) $headers[$header]);
 					}
 
 					return $carry;
