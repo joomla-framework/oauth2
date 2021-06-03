@@ -19,7 +19,7 @@ class Callback
 	 *
 	 * @since   1.0
 	 */
-	public function encodedGrantOauthCallback($url, $data, array $headers = null, $timeout = null)
+	public static function encodedGrantOauthCallback($url, $data, array $headers = null, $timeout = null)
 	{
 		return new Response(
 			self::toStream('access_token=accessvalue&refresh_token=refreshvalue&expires_in=3600'),
@@ -40,7 +40,7 @@ class Callback
 	 *
 	 * @since   1.0
 	 */
-	public function jsonGrantOauthCallback($url, $data, array $headers = null, $timeout = null)
+	public static function jsonGrantOauthCallback($url, $data, array $headers = null, $timeout = null)
 	{
 		return new Response(
 			self::toStream('{"access_token":"accessvalue","refresh_token":"refreshvalue","expires_in":3600}'),
@@ -61,7 +61,7 @@ class Callback
 	 *
 	 * @since   1.0
 	 */
-	public function queryOauthCallback($url, $data, array $headers = null, $timeout = null)
+	public static function queryOauthCallback($url, $data, array $headers = null, $timeout = null)
 	{
 		return new Response(
 			self::toStream('Lorem ipsum dolor sit amet.'),
@@ -81,7 +81,7 @@ class Callback
 	 *
 	 * @since   1.0
 	 */
-	public function getOauthCallback($url, array $headers = null, $timeout = null)
+	public static function getOauthCallback($url, array $headers = null, $timeout = null)
 	{
 		return new Response(
 			self::toStream('Lorem ipsum dolor sit amet.'),
