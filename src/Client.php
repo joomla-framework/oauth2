@@ -432,7 +432,21 @@ class Client
 	{
 		if (!method_exists($response, 'getHeaderLine'))
 		{
-			return implode(',', $response->getHeader('content-type'));
+			// Using old Joomla\Http\Response
+			$headers = $response->headers;
+
+			return array_reduce(
+				array_keys($headers),
+				function ($carry, $header) use ($headers) {
+					if (strtolower($header) === 'content-type')
+					{
+						return implode(',', $headers[$header]);
+					}
+
+					return $carry;
+				},
+				''
+			);
 		}
 
 		return $response->getHeaderLine('content-type');
