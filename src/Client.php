@@ -12,6 +12,7 @@ use InvalidArgumentException;
 use Joomla\Application\AbstractWebApplication;
 use Joomla\Http\Exception\UnexpectedResponseException;
 use Joomla\Http\Http;
+use Joomla\Http\Response;
 use Joomla\Input\Input;
 use RuntimeException;
 
@@ -56,8 +57,12 @@ class Client
 	 *
 	 * @since   1.0
 	 */
-	public function __construct($options = array(), Http $http, Input $input, AbstractWebApplication $application = null)
-	{
+	public function __construct(
+		$options = array(),
+		Http $http,
+		Input $input,
+		AbstractWebApplication $application = null
+	) {
 		$this->options     = $options;
 		$this->http        = $http;
 		$this->input       = $input;
@@ -74,7 +79,7 @@ class Client
 	 */
 	public function authenticate()
 	{
-		if ($data['code'] = $this->input->get('code', false, 'raw'))
+		if ($code = $this->input->get('code', false, 'raw'))
 		{
 			$data = array(
 				'grant_type'    => 'authorization_code',
@@ -85,12 +90,9 @@ class Client
 
 			$response = $this->http->post($this->getOption('tokenurl'), $data);
 
-			// Make sure all headers are lowercase
-			$response->headers = array_change_key_case($response->headers, CASE_LOWER);
-
 			if ($response->code >= 200 && $response->code < 400)
 			{
-				if (strpos($response->headers['content-type'], 'application/json') !== false)
+				if (strpos($this->getContentType($response), 'application/json') !== false)
 				{
 					$token = array_merge(json_decode($response->body, true), array('created' => time()));
 				}
@@ -106,7 +108,9 @@ class Client
 			}
 
 			// As of 2.0 this will throw an UnexpectedResponseException
-			throw new RuntimeException('Error code ' . $response->code . ' received requesting access token: ' . $response->body . '.');
+			throw new RuntimeException(
+				'Error code ' . $response->code . ' received requesting access token: ' . $response->body . '.'
+			);
 		}
 
 		if ($this->getOption('sendheaders'))
@@ -184,8 +188,12 @@ class Client
 
 		if ($this->getOption('scope'))
 		{
-			$scope = \is_array($this->getOption('scope')) ? implode(' ', $this->getOption('scope')) : $this->getOption('scope');
-			$url .= '&scope=' . urlencode($scope);
+			$scope = \is_array($this->getOption('scope'))
+				? implode(' ', $this->getOption('scope'))
+				: $this->getOption(
+					'scope'
+				);
+			$url   .= '&scope=' . urlencode($scope);
 		}
 
 		if ($this->getOption('state'))
@@ -213,7 +221,7 @@ class Client
 	 * @param   string  $method   The method with which to send the request
 	 * @param   int     $timeout  The timeout for the request
 	 *
-	 * @return  \Joomla\Http\Response  The http response object.
+	 * @return  Response  The http response object.
 	 *
 	 * @since   1.0
 	 * @throws  InvalidArgumentException
@@ -276,7 +284,9 @@ class Client
 		if ($response->code < 200 || $response->code >= 400)
 		{
 			// As of 2.0 this will throw an UnexpectedResponseException
-			throw new RuntimeException('Error code ' . $response->code . ' received requesting data: ' . $response->body . '.');
+			throw new RuntimeException(
+				'Error code ' . $response->code . ' received requesting data: ' . $response->body . '.'
+			);
 		}
 
 		return $response;
@@ -386,12 +396,9 @@ class Client
 
 		$response = $this->http->post($this->getOption('tokenurl'), $data);
 
-		// Make sure all headers are lowercase
-		$response->headers = array_change_key_case($response->headers, CASE_LOWER);
-
 		if ($response->code >= 200 || $response->code < 400)
 		{
-			if (strpos($response->headers['content-type'], 'application/json') !== false)
+			if (strpos($this->getContentType($response), 'application/json') !== false)
 			{
 				$token = array_merge(json_decode($response->body, true), array('created' => time()));
 			}
@@ -414,5 +421,34 @@ class Client
 				$response->body
 			)
 		);
+	}
+
+	/**
+	 * @param   Response  $response  The response
+	 *
+	 * @return string
+	 */
+	private function getContentType(Response $response)
+	{
+		if (!method_exists($response, 'getHeaderLine'))
+		{
+			// Using old Joomla\Http\Response
+			$headers = $response->headers;
+
+			return array_reduce(
+				array_keys($headers),
+				function ($carry, $header) use ($headers) {
+					if (strtolower($header) === 'content-type')
+					{
+						return implode(',', (array) $headers[$header]);
+					}
+
+					return $carry;
+				},
+				''
+			);
+		}
+
+		return $response->getHeaderLine('content-type');
 	}
 }
