@@ -12,6 +12,7 @@ use Joomla\Application\WebApplicationInterface;
 use Joomla\Http\Exception\UnexpectedResponseException;
 use Joomla\Http\Http;
 use Joomla\Http\HttpFactory;
+use Joomla\Http\Response;
 use Joomla\Input\Input;
 use Joomla\Uri\Uri;
 
@@ -101,25 +102,25 @@ class Client
 
 			$response = $this->http->post($this->getOption('tokenurl'), $data);
 
-			if (!($response->code >= 200 && $response->code < 400))
+			if (!($response->getStatusCode() >= 200 && $response->getStatusCode() < 400))
 			{
 				throw new UnexpectedResponseException(
 					$response,
 					sprintf(
 						'Error code %s received requesting access token: %s.',
-						$response->code,
-						$response->body
+						$response->getStatusCode(),
+						(string) $response->getBody()
 					)
 				);
 			}
 
-			if (strpos($response->headers['Content-Type'], 'application/json') !== false)
+			if (self::isJsonResponse($response))
 			{
-				$token = array_merge(json_decode($response->body, true), ['created' => time()]);
+				$token = array_merge(json_decode((string) $response->getBody(), true), ['created' => time()]);
 			}
 			else
 			{
-				parse_str($response->body, $token);
+				parse_str((string) $response->getBody(), $token);
 				$token = array_merge($token, ['created' => time()]);
 			}
 
@@ -274,14 +275,14 @@ class Client
 				throw new \InvalidArgumentException('Unknown HTTP request method: ' . $method . '.');
 		}
 
-		if ($response->code < 200 || $response->code >= 400)
+		if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 400)
 		{
 			throw new UnexpectedResponseException(
 				$response,
 				sprintf(
 					'Error code %s received requesting data: %s.',
-					$response->code,
-					$response->body
+					$response->getStatusCode(),
+					(string) $response->getBody()
 				)
 			);
 		}
@@ -394,30 +395,52 @@ class Client
 
 		$response = $this->http->post($this->getOption('tokenurl'), $data);
 
-		if (!($response->code >= 200 || $response->code < 400))
+		if (!($response->getStatusCode() >= 200 || $response->getStatusCode() < 400))
 		{
 			throw new UnexpectedResponseException(
 				$response,
 				sprintf(
 					'Error code %s received refreshing token: %s.',
-					$response->code,
-					$response->body
+					$response->getStatusCode(),
+					(string) $response->getBody()
 				)
 			);
 		}
 
-		if (strpos($response->headers['Content-Type'], 'application/json') !== false)
+		if (self::isJsonResponse($response))
 		{
-			$token = array_merge(json_decode($response->body, true), ['created' => time()]);
+			$token = array_merge(json_decode((string) $response->getBody(), true), ['created' => time()]);
 		}
 		else
 		{
-			parse_str($response->body, $token);
+			parse_str((string) $response->getBody(), $token);
 			$token = array_merge($token, ['created' => time()]);
 		}
 
 		$this->setToken($token);
 
 		return $token;
+	}
+
+	/**
+	 * Tests if given response contains JSON header
+	 *
+	 * @param   Response  $response  The response object
+	 *
+	 * @return  bool
+	 *
+	 * @since   __DEPLOY_VERSION__
+	 */
+	private static function isJsonResponse(Response $response): bool
+	{
+		foreach ($response->getHeader('Content-Type') as $value)
+		{
+			if (strpos($value, 'application/json') !== false)
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 }
