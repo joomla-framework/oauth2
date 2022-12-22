@@ -12,7 +12,6 @@ use Joomla\Application\WebApplicationInterface;
 use Joomla\Http\Exception\UnexpectedResponseException;
 use Joomla\Http\Http;
 use Joomla\Http\HttpFactory;
-use Joomla\Http\Response;
 use Joomla\Input\Input;
 use Joomla\Uri\Uri;
 
@@ -114,7 +113,7 @@ class Client
 				);
 			}
 
-			if (self::isJsonResponse($response))
+			if (strpos($response->getHeaderLine('Content-Type'), 'application/json') !== false)
 			{
 				$token = array_merge(json_decode((string) $response->getBody(), true), ['created' => time()]);
 			}
@@ -407,7 +406,7 @@ class Client
 			);
 		}
 
-		if (self::isJsonResponse($response))
+		if (strpos($response->getHeaderLine('Content-Type'), 'application/json') !== false)
 		{
 			$token = array_merge(json_decode((string) $response->getBody(), true), ['created' => time()]);
 		}
@@ -420,27 +419,5 @@ class Client
 		$this->setToken($token);
 
 		return $token;
-	}
-
-	/**
-	 * Tests if given response contains JSON header
-	 *
-	 * @param   Response  $response  The response object
-	 *
-	 * @return  boolean
-	 *
-	 * @since   __DEPLOY_VERSION__
-	 */
-	private static function isJsonResponse(Response $response): bool
-	{
-		foreach ($response->getHeader('Content-Type') as $value)
-		{
-			if (strpos($value, 'application/json') !== false)
-			{
-				return true;
-			}
-		}
-
-		return false;
 	}
 }
