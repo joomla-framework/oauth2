@@ -427,7 +427,7 @@ class Client
 	 *
 	 * @param   Response  $response  The response object
 	 *
-	 * @return  bool
+	 * @return  boolean
 	 *
 	 * @since   __DEPLOY_VERSION__
 	 */
