@@ -35,7 +35,7 @@ class ClientTest extends TestCase
 	 *
 	 * @var  Http|MockObject
 	 */
-	protected $client;
+	protected $http;
 
 	/**
 	 * The input object to use in retrieving GET/POST data.
