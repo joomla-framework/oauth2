@@ -90,13 +90,14 @@ class Client
 	 */
 	public function authenticate()
 	{
-		if ($data['code'] = $this->input->get('code', false, 'raw'))
+		if ($dataCode = $this->input->get('code', false, 'raw'))
 		{
 			$data = [
 				'grant_type'    => 'authorization_code',
 				'redirect_uri'  => $this->getOption('redirecturi'),
 				'client_id'     => $this->getOption('clientid'),
 				'client_secret' => $this->getOption('clientsecret'),
+				'code'    	=> $dataCode,
 			];
 
 			$response = $this->http->post($this->getOption('tokenurl'), $data);
