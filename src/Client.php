@@ -58,14 +58,14 @@ class Client
     /**
      * Constructor.
      *
-     * @param   array|\ArrayAccess       $options      OAuth2 Client options object
-     * @param   Http                     $http         The HTTP client object
-     * @param   Input                    $input        The input object
-     * @param   WebApplicationInterface  $application  The application object
+     * @param   array|\ArrayAccess        $options      OAuth2 Client options object
+     * @param   ?Http                     $http         The HTTP client object
+     * @param   ?Input                    $input        The input object
+     * @param   ?WebApplicationInterface  $application  The application object
      *
      * @since   1.0
      */
-    public function __construct($options = [], Http $http = null, Input $input = null, WebApplicationInterface $application = null)
+    public function __construct($options = [], ?Http $http = null, ?Input $input = null, ?WebApplicationInterface $application = null)
     {
         if (!\is_array($options) && !($options instanceof \ArrayAccess)) {
             throw new \InvalidArgumentException(

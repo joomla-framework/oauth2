@@ -339,14 +339,14 @@ class ClientTest extends TestCase
     /**
      * Callback to mock an encoded & granted OAuth response
      *
-     * @param   string   $url      Path to the resource.
-     * @param   mixed    $data     Either an associative array or a string to be sent with the request.
-     * @param   array    $headers  An array of name-value pairs to include in the header of the request
-     * @param   integer  $timeout  Read timeout in seconds.
+     * @param   string    $url      Path to the resource.
+     * @param   mixed     $data     Either an associative array or a string to be sent with the request.
+     * @param   ?array    $headers  An array of name-value pairs to include in the header of the request
+     * @param   ?integer  $timeout  Read timeout in seconds.
      *
      * @return  object
      */
-    public function encodedGrantOauthCallback($url, $data, array $headers = null, $timeout = null)
+    public function encodedGrantOauthCallback($url, $data, ?array $headers = null, $timeout = null)
     {
         $response = new \stdClass();
 
@@ -360,14 +360,14 @@ class ClientTest extends TestCase
     /**
      * Callback to mock a JSON based & granted OAuth response
      *
-     * @param   string   $url      Path to the resource.
-     * @param   mixed    $data     Either an associative array or a string to be sent with the request.
-     * @param   array    $headers  An array of name-value pairs to include in the header of the request
-     * @param   integer  $timeout  Read timeout in seconds.
+     * @param   string    $url      Path to the resource.
+     * @param   mixed     $data     Either an associative array or a string to be sent with the request.
+     * @param   ?array    $headers  An array of name-value pairs to include in the header of the request
+     * @param   ?integer  $timeout  Read timeout in seconds.
      *
      * @return  object
      */
-    public function jsonGrantOauthCallback($url, $data, array $headers = null, $timeout = null)
+    public function jsonGrantOauthCallback($url, $data, ?array $headers = null, $timeout = null)
     {
         $response = new \stdClass();
 
@@ -381,14 +381,14 @@ class ClientTest extends TestCase
     /**
      * Callback to mock a query based OAuth response
      *
-     * @param   string   $url      Path to the resource.
-     * @param   mixed    $data     Either an associative array or a string to be sent with the request.
-     * @param   array    $headers  An array of name-value pairs to include in the header of the request
-     * @param   integer  $timeout  Read timeout in seconds.
+     * @param   string    $url      Path to the resource.
+     * @param   mixed     $data     Either an associative array or a string to be sent with the request.
+     * @param   ?array    $headers  An array of name-value pairs to include in the header of the request
+     * @param   ?integer  $timeout  Read timeout in seconds.
      *
      * @return  object
      */
-    public function queryOauthCallback($url, $data, array $headers = null, $timeout = null)
+    public function queryOauthCallback($url, $data, ?array $headers = null, $timeout = null)
     {
         $response = new \stdClass();
 
@@ -402,13 +402,13 @@ class ClientTest extends TestCase
     /**
      * Callback to mock a OAuth response
      *
-     * @param   string   $url      Path to the resource.
-     * @param   array    $headers  An array of name-value pairs to include in the header of the request.
-     * @param   integer  $timeout  Read timeout in seconds.
+     * @param   string    $url      Path to the resource.
+     * @param   ?array    $headers  An array of name-value pairs to include in the header of the request.
+     * @param   ?integer  $timeout  Read timeout in seconds.
      *
      * @return  object
      */
-    public function getOauthCallback($url, array $headers = null, $timeout = null)
+    public function getOauthCallback($url, ?array $headers = null, $timeout = null)
     {
         $response = new \stdClass();
 
