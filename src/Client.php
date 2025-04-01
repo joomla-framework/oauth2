@@ -90,8 +90,7 @@ class Client
      */
     public function authenticate()
     {
-        if ($dataCode = $this->input->get('code', false, 'raw'))
-        {
+        if ($dataCode = $this->input->get('code', false, 'raw')) {
             $data = [
                 'grant_type'    => 'authorization_code',
                 'redirect_uri'  => $this->getOption('redirecturi'),
