@@ -96,7 +96,7 @@ class Client
                 'redirect_uri'  => $this->getOption('redirecturi'),
                 'client_id'     => $this->getOption('clientid'),
                 'client_secret' => $this->getOption('clientsecret'),
-                'code'        => $dataCode,
+                'code'          => $dataCode,
             ];
 
             $response = $this->http->post($this->getOption('tokenurl'), $data);
