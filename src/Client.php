@@ -13,6 +13,7 @@ use Joomla\Application\WebApplicationInterface;
 use Joomla\Http\Exception\UnexpectedResponseException;
 use Joomla\Http\Http;
 use Joomla\Http\HttpFactory;
+use Joomla\Http\Response;
 use Joomla\Input\Input;
 use Joomla\Uri\Uri;
 
@@ -65,8 +66,12 @@ class Client
      *
      * @since   1.0
      */
-    public function __construct($options = [], ?Http $http = null, ?Input $input = null, ?WebApplicationInterface $application = null)
-    {
+    public function __construct(
+        $options = [],
+        ?Http $http = null,
+        ?Input $input = null,
+        ?WebApplicationInterface $application = null
+    ) {
         if (!\is_array($options) && !($options instanceof \ArrayAccess)) {
             throw new \InvalidArgumentException(
                 'The options param must be an array or implement the ArrayAccess interface.'
@@ -77,6 +82,28 @@ class Client
         $this->http        = $http ?: (new HttpFactory())->getHttp($this->options);
         $this->input       = $input ?: ($application ? $application->getInput() : new Input());
         $this->application = $application;
+    }
+
+    /**
+     * Tests if given response contains JSON header
+     *
+     * @param   Response  $response  The response object
+     *
+     * @return  boolean
+     *
+     */
+    private static function isJsonResponse($response)
+    {
+        foreach (['Content-Type', 'content-type'] as $type) {
+            if (array_key_exists($type, $response->headers)) {
+                $content_type =  is_array($response->headers[$type]) ?
+                                    $response->headers[$type][0] : $response->headers[$type];
+                if (strpos($content_type, 'application/json') !== false) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
@@ -112,7 +139,7 @@ class Client
                 );
             }
 
-            if (strpos($response->headers['Content-Type'], 'application/json') !== false) {
+            if (self::isJsonResponse($response)) {
                 $token = array_merge(json_decode($response->body, true), ['created' => time()]);
             } else {
                 parse_str($response->body, $token);
@@ -127,7 +154,10 @@ class Client
         if ($this->getOption('sendheaders')) {
             if (!($this->application instanceof WebApplicationInterface)) {
                 throw new \RuntimeException(
-                    \sprintf('A "%s" implementation is required to process authentication.', WebApplicationInterface::class)
+                    \sprintf(
+                        'A "%s" implementation is required to process authentication.',
+                        WebApplicationInterface::class
+                    )
                 );
             }
 
@@ -380,7 +410,7 @@ class Client
             );
         }
 
-        if (strpos($response->headers['Content-Type'], 'application/json') !== false) {
+        if (self::isJsonResponse($response)) {
             $token = array_merge(json_decode($response->body, true), ['created' => time()]);
         } else {
             parse_str($response->body, $token);
