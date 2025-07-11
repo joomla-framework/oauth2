@@ -7,12 +7,12 @@
 
 ## Installation via Composer
 
-Add `"joomla/oauth2": "~3.0"` to the require block in your composer.json and then run `composer install`.
+Add `"joomla/oauth2": "~4.0"` to the require block in your composer.json and then run `composer install`.
 
 ```json
 {
 	"require": {
-		"joomla/oauth2": "~3.0"
+		"joomla/oauth2": "~4.0"
 	}
 }
 ```
@@ -20,5 +20,5 @@ Add `"joomla/oauth2": "~3.0"` to the require block in your composer.json and the
 Alternatively, you can simply run the following from the command line:
 
 ```sh
-composer require joomla/oauth2 "~3.0"
+composer require joomla/oauth2 "~4.0"
 ```
