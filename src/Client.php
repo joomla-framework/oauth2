@@ -110,11 +110,11 @@ class Client
                 );
             }
 
-            if (!in_array('application/json', $response->getHeader('Content-Type'))) {
+            if (in_array('application/json', $response->getHeader('Content-Type'))) {
                 $token = array_merge(json_decode($response->getBody()->getContents(), true), ['created' => time()]);
             } else {
                 parse_str($response->getBody()->getContents(), $token);
-                $token = array_merge((array) $token, ['created' => time()]);
+                $token = array_merge($token, ['created' => time()]);
             }
 
             $this->setToken($token);
@@ -378,11 +378,11 @@ class Client
             );
         }
 
-        if (!in_array('application/json', $response->getHeader('Content-Type'))) {
+        if (in_array('application/json', $response->getHeader('Content-Type'))) {
             $token = array_merge(json_decode($response->getBody()->getContents(), true), ['created' => time()]);
         } else {
             parse_str($response->getBody()->getContents(), $token);
-            $token = array_merge((array)$token, ['created' => time()]);
+            $token = array_merge($token, ['created' => time()]);
         }
 
         $this->setToken($token);
