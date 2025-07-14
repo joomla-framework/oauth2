@@ -35,7 +35,7 @@ class ClientTest extends TestCase
      *
      * @var  Http|MockObject
      */
-    protected $client;
+    protected $http;
 
     /**
      * The input object to use in retrieving GET/POST data.
@@ -198,24 +198,27 @@ class ClientTest extends TestCase
         $token['expires_in'] = 3600;
         $this->object->setToken($token);
 
+        $returnData = new Response('data://text/plain,Lorem ipsum dolor sit amet.', 200, ['Content-Type' => 'text/html']);
+
         $this->http->expects($this->once())
             ->method('post')
-            ->willReturnCallback([$this, 'queryOauthCallback']);
+            ->willReturn($returnData);
 
         $result = $this->object->query('https://www.googleapis.com/auth/calendar', ['param' => 'value'], [], 'post');
 
-        $this->assertEquals($result->body, 'Lorem ipsum dolor sit amet.');
-        $this->assertEquals(200, $result->code);
+        $this->assertEquals('Lorem ipsum dolor sit amet.', $result->getBody()->getContents());
+        $this->assertEquals(200, $result->getStatusCode());
+        $returnData->getBody()->rewind();
 
         $this->object->setOption('authmethod', 'get');
         $this->http->expects($this->once())
             ->method('get')
-            ->willReturnCallback([$this, 'getOauthCallback']);
+            ->willReturn($returnData);
 
         $result = $this->object->query('https://www.googleapis.com/auth/calendar', ['param' => 'value'], [], 'get');
 
-        $this->assertEquals($result->body, 'Lorem ipsum dolor sit amet.');
-        $this->assertEquals(200, $result->code);
+        $this->assertEquals('Lorem ipsum dolor sit amet.', $result->getBody()->getContents());
+        $this->assertEquals(200, $result->getStatusCode());
     }
 
     /**
@@ -325,9 +328,11 @@ class ClientTest extends TestCase
         $this->object->setOption('userefresh', true);
         $this->object->setToken(['access_token' => 'RANDOM STRING OF DATA', 'expires' => 3600, 'refresh_token' => ' RANDOM STRING OF DATA']);
 
+        $returnData = new Response('data://text/plain,{"access_token":"accessvalue","refresh_token":"refreshvalue","expires_in":3600}', 200, ['Content-Type' => 'application/json']);
+
         $this->http->expects($this->once())
             ->method('post')
-            ->willReturnCallback([$this, 'jsonGrantOauthCallback']);
+            ->willReturn($returnData);
 
         $result = $this->object->refreshToken();
 
@@ -345,36 +350,11 @@ class ClientTest extends TestCase
      * @param   ?array    $headers  An array of name-value pairs to include in the header of the request
      * @param   ?integer  $timeout  Read timeout in seconds.
      *
-     * @return  object
+     * @return  Response
      */
     public function encodedGrantOauthCallback($url, $data, ?array $headers = null, $timeout = null)
     {
-        $code    = 200;
-        $headers = ['Content-Type' => 'x-www-form-urlencoded'];
-        $body    = 'access_token=accessvalue&refresh_token=refreshvalue&expires_in=3600';
-
-        $response = new Response($body, $code, $headers);
-
-        return $response;
-    }
-
-    /**
-     * Callback to mock a JSON based & granted OAuth response
-     *
-     * @param   string    $url      Path to the resource.
-     * @param   mixed     $data     Either an associative array or a string to be sent with the request.
-     * @param   ?array    $headers  An array of name-value pairs to include in the header of the request
-     * @param   ?integer  $timeout  Read timeout in seconds.
-     *
-     * @return  object
-     */
-    public function jsonGrantOauthCallback($url, $data, ?array $headers = null, $timeout = null)
-    {
-        $code    = 200;
-        $headers = ['Content-Type' => 'application/json'];
-        $body    = '{"access_token":"accessvalue","refresh_token":"refreshvalue","expires_in":3600}';
-
-        $response = new Response($body, $code, $headers);
+        $response = new Response('data://text/plain,access_token=accessvalue&refresh_token=refreshvalue&expires_in=3600', 200, ['Content-Type' => 'x-www-form-urlencoded']);
 
         return $response;
     }
@@ -387,15 +367,11 @@ class ClientTest extends TestCase
      * @param   ?array    $headers  An array of name-value pairs to include in the header of the request
      * @param   ?integer  $timeout  Read timeout in seconds.
      *
-     * @return  object
+     * @return  Response
      */
     public function queryOauthCallback($url, $data, ?array $headers = null, $timeout = null)
     {
-        $code    = 200;
-        $headers = ['Content-Type' => 'text/html'];
-        $body    = 'Lorem ipsum dolor sit amet.';
-
-        $response = new Response($body, $code, $headers);
+        $response = new Response('data://text/plain,Lorem ipsum dolor sit amet.', 200, ['Content-Type' => 'text/html']);
 
         return $response;
     }
@@ -407,15 +383,11 @@ class ClientTest extends TestCase
      * @param   ?array    $headers  An array of name-value pairs to include in the header of the request.
      * @param   ?integer  $timeout  Read timeout in seconds.
      *
-     * @return  object
+     * @return  Response
      */
     public function getOauthCallback($url, ?array $headers = null, $timeout = null)
     {
-        $code    = 200;
-        $headers = ['Content-Type' => 'text/html'];
-        $body    = 'Lorem ipsum dolor sit amet.';
-
-        $response = new Response($body, $code, $headers);
+        $response = new Response('data://text/plain,Lorem ipsum dolor sit amet.', 200, ['Content-Type' => 'text/html']);
 
         return $response;
     }
