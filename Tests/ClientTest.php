@@ -9,6 +9,7 @@ namespace Joomla\OAuth2\Tests;
 
 use Joomla\Application\WebApplicationInterface;
 use Joomla\Http\Http;
+use Joomla\Http\Response;
 use Joomla\Input\Input;
 use Joomla\OAuth2\Client;
 use Joomla\Registry\Registry;
@@ -348,11 +349,11 @@ class ClientTest extends TestCase
      */
     public function encodedGrantOauthCallback($url, $data, ?array $headers = null, $timeout = null)
     {
-        $response = new \stdClass();
+        $code    = 200;
+        $headers = ['Content-Type' => 'x-www-form-urlencoded'];
+        $body    = 'access_token=accessvalue&refresh_token=refreshvalue&expires_in=3600';
 
-        $response->code    = 200;
-        $response->headers = ['Content-Type' => 'x-www-form-urlencoded'];
-        $response->body    = 'access_token=accessvalue&refresh_token=refreshvalue&expires_in=3600';
+        $response = new Response($body, $code, $headers);
 
         return $response;
     }
@@ -369,11 +370,11 @@ class ClientTest extends TestCase
      */
     public function jsonGrantOauthCallback($url, $data, ?array $headers = null, $timeout = null)
     {
-        $response = new \stdClass();
+        $code    = 200;
+        $headers = ['Content-Type' => 'application/json'];
+        $body    = '{"access_token":"accessvalue","refresh_token":"refreshvalue","expires_in":3600}';
 
-        $response->code    = 200;
-        $response->headers = ['Content-Type' => 'application/json'];
-        $response->body    = '{"access_token":"accessvalue","refresh_token":"refreshvalue","expires_in":3600}';
+        $response = new Response($body, $code, $headers);
 
         return $response;
     }
@@ -390,11 +391,11 @@ class ClientTest extends TestCase
      */
     public function queryOauthCallback($url, $data, ?array $headers = null, $timeout = null)
     {
-        $response = new \stdClass();
+        $code    = 200;
+        $headers = ['Content-Type' => 'text/html'];
+        $body    = 'Lorem ipsum dolor sit amet.';
 
-        $response->code    = 200;
-        $response->headers = ['Content-Type' => 'text/html'];
-        $response->body    = 'Lorem ipsum dolor sit amet.';
+        $response = new Response($body, $code, $headers);
 
         return $response;
     }
@@ -410,11 +411,11 @@ class ClientTest extends TestCase
      */
     public function getOauthCallback($url, ?array $headers = null, $timeout = null)
     {
-        $response = new \stdClass();
+        $code    = 200;
+        $headers = ['Content-Type' => 'text/html'];
+        $body    = 'Lorem ipsum dolor sit amet.';
 
-        $response->code    = 200;
-        $response->headers = ['Content-Type' => 'text/html'];
-        $response->body    = 'Lorem ipsum dolor sit amet.';
+        $response = new Response($body, $code, $headers);
 
         return $response;
     }
