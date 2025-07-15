@@ -7,7 +7,25 @@ parameters:
 			path: src/Client.php
 
 		-
+			message: '#^Instanceof between ArrayAccess and ArrayAccess will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/Client.php
+
+		-
+			message: '#^Instanceof between Joomla\\Application\\WebApplicationInterface and Joomla\\Application\\WebApplicationInterface will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: src/Client.php
+
+		-
 			message: '#^Method Joomla\\OAuth2\\Client\:\:query\(\) should return Joomla\\Http\\Response but returns false\.$#'
 			identifier: return.type
+			count: 1
+			path: src/Client.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
 			count: 1
 			path: src/Client.php
