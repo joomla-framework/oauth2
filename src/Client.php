@@ -7,8 +7,6 @@
  * @license    GNU General Public License version 2 or later; see LICENSE
  */
 
-declare(strict_types=1);
-
 namespace Joomla\OAuth2;
 
 use Joomla\Application\WebApplicationInterface;
@@ -67,8 +65,14 @@ class Client
      *
      * @since   1.0
      */
-    public function __construct(array|\ArrayAccess $options = [], ?Http $http = null, ?Input $input = null, ?WebApplicationInterface $application = null)
+    public function __construct($options = [], ?Http $http = null, ?Input $input = null, ?WebApplicationInterface $application = null)
     {
+        if (!\is_array($options) && !($options instanceof \ArrayAccess)) {
+            throw new \InvalidArgumentException(
+                'The options param must be an array or implement the ArrayAccess interface.'
+            );
+        }
+
         $this->options     = $options;
         $this->http        = $http ?: (new HttpFactory())->getHttp($this->options);
         $this->input       = $input ?: ($application ? $application->getInput() : new Input());
@@ -123,6 +127,12 @@ class Client
         }
 
         if ($this->getOption('sendheaders')) {
+            if (!($this->application instanceof WebApplicationInterface)) {
+                throw new \RuntimeException(
+                    \sprintf('A "%s" implementation is required to process authentication.', WebApplicationInterface::class)
+                );
+            }
+
             $this->application->redirect($this->createUrl());
         }
 
