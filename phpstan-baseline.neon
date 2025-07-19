@@ -1,13 +1,26 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^Comparison operation "\<" between \(array\|float\|int\) and int\<21, max\> results in an error\.$#'
-			identifier: smaller.invalid
+			message: "#^Comparison operation \"\\<\" between \\(array\\|float\\|int\\) and int\\<21, max\\> results in an error\\.$#"
 			count: 2
 			path: src/Client.php
 
 		-
-			message: '#^Method Joomla\\OAuth2\\Client\:\:query\(\) should return Joomla\\Http\\Response but returns false\.$#'
-			identifier: return.type
+			message: "#^Comparison operation \"\\<\" between int\\<min, 199\\> and 400 is always true\\.$#"
+			count: 1
+			path: src/Client.php
+
+		-
+			message: "#^Method Joomla\\\\OAuth2\\\\Client\\:\\:query\\(\\) should return Joomla\\\\Http\\\\Response but returns false\\.$#"
+			count: 1
+			path: src/Client.php
+
+		-
+			message: "#^Result of && is always false\\.$#"
+			count: 1
+			path: src/Client.php
+
+		-
+			message: "#^Result of \\|\\| is always true\\.$#"
 			count: 1
 			path: src/Client.php
