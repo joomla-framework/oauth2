@@ -109,15 +109,15 @@ class Client
                     sprintf(
                         'Error code %s received requesting access token: %s.',
                         $response->getStatusCode(),
-                        $response->getBody()->getContents()
+                        (string) $response->getBody()
                     )
                 );
             }
 
             if (in_array('application/json', $response->getHeader('Content-Type'))) {
-                $token = array_merge(json_decode($response->getBody()->getContents(), true), ['created' => time()]);
+                $token = array_merge(json_decode((string) $response->getBody(), true), ['created' => time()]);
             } else {
-                parse_str($response->getBody()->getContents(), $token);
+                parse_str((string) $response->getBody(), $token);
                 $token = array_merge($token, ['created' => time()]);
             }
 
@@ -383,15 +383,15 @@ class Client
                 sprintf(
                     'Error code %s received refreshing token: %s.',
                     $response->getStatusCode(),
-                    $response->getBody()->getContents()
+                    (string) $response->getBody()
                 )
             );
         }
 
         if (in_array('application/json', $response->getHeader('Content-Type'))) {
-            $token = array_merge(json_decode($response->getBody()->getContents(), true), ['created' => time()]);
+            $token = array_merge(json_decode((string) $response->getBody(), true), ['created' => time()]);
         } else {
-            parse_str($response->getBody()->getContents(), $token);
+            parse_str((string) $response->getBody(), $token);
             $token = array_merge($token, ['created' => time()]);
         }
 
