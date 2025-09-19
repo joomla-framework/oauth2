@@ -112,7 +112,7 @@ class Client
                 );
             }
 
-            if (strpos($response->headers['Content-Type'], 'application/json') !== false) {
+            if (in_array('application/json', $response->getHeader('Content-Type'))) {
                 $token = array_merge(json_decode($response->body, true), ['created' => time()]);
             } else {
                 parse_str($response->body, $token);
@@ -380,7 +380,7 @@ class Client
             );
         }
 
-        if (strpos($response->headers['Content-Type'], 'application/json') !== false) {
+        if (in_array('application/json', $response->getHeader('Content-Type'))) {
             $token = array_merge(json_decode($response->body, true), ['created' => time()]);
         } else {
             parse_str($response->body, $token);
