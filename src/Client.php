@@ -80,6 +80,28 @@ class Client
     }
 
     /**
+     * Tests if given response contains JSON header
+     *
+     * @param   Response  $response  The response object
+     *
+     * @return  boolean
+     *
+     */
+    private static function isJsonResponse($response)
+    {
+        foreach (['Content-Type', 'content-type'] as $type) {
+            if (array_key_exists($type, $response->headers)) {
+                $content_type =  is_array($response->headers[$type]) ?
+                                    $response->headers[$type][0] : $response->headers[$type];
+                if (strpos($content_type, 'application/json') !== false) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
      * Get the access token or redirect to the authentication URL.
      *
      * @return  array|boolean  The access token or false on failure
@@ -112,7 +134,7 @@ class Client
                 );
             }
 
-            if (in_array('application/json', $response->getHeader('Content-Type'))) {
+            if ($this->isJsonResponse($response)) {
                 $token = array_merge(json_decode($response->body, true), ['created' => time()]);
             } else {
                 parse_str($response->body, $token);
