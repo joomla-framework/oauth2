@@ -13,6 +13,7 @@ use Joomla\Application\WebApplicationInterface;
 use Joomla\Http\Exception\UnexpectedResponseException;
 use Joomla\Http\Http;
 use Joomla\Http\HttpFactory;
+use Joomla\Http\Response;
 use Joomla\Input\Input;
 use Joomla\Uri\Uri;
 
@@ -82,12 +83,12 @@ class Client
     /**
      * Tests if given response contains JSON header
      *
-     * @param   Response  $response  The response object
+     * @param Response  $response The response object
      *
      * @return  boolean
      *
      */
-    private static function isJsonResponse($response)
+    private static function isJsonResponse(Response $response)
     {
         foreach (['Content-Type', 'content-type'] as $type) {
             if (array_key_exists($type, $response->headers)) {
