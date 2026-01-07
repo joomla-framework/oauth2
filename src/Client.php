@@ -88,7 +88,7 @@ class Client
      * @return  boolean
      *
      */
-    private static function isJsonResponse(Response $response)
+    private function isJsonResponse(Response $response)
     {
         foreach (['Content-Type', 'content-type'] as $type) {
             $content_type = $response->getHeader($type)[0];
