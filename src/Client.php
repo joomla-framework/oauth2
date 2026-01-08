@@ -90,9 +90,8 @@ class Client
      */
     private function isJsonResponse(Response $response)
     {
-        foreach (['Content-Type', 'content-type'] as $type) {
-            $content_type = $response->getHeader($type)[0];
-            if (strpos($content_type, 'application/json') !== false) {
+        foreach ($response->getHeader('Content-Type') as $type) {
+            if (str_starts_with($type, 'application/json')) {
                 return true;
             }
         }
