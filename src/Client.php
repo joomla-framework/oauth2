@@ -407,7 +407,8 @@ class Client
             );
         }
 
-        if (in_array('application/json', $response->getHeader('Content-Type'))) {
+
+        if ($this->isJsonResponse($response)) {
             $token = array_merge(json_decode((string) $response->getBody(), true), ['created' => time()]);
         } else {
             parse_str((string) $response->getBody(), $token);
