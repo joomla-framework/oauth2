@@ -88,7 +88,7 @@ class Client
      * @return  boolean
      *
      */
-    private function isJsonResponse(Response $response)
+    protected function isJsonResponse(Response $response)
     {
         foreach ($response->getHeader('Content-Type') as $type) {
             if (str_starts_with($type, 'application/json')) {
