@@ -88,15 +88,11 @@ class Client
      * @return  boolean
      *
      */
-    private static function isJsonResponse(Response $response)
+    protected function isJsonResponse(Response $response)
     {
-        foreach (['Content-Type', 'content-type'] as $type) {
-            if (array_key_exists($type, $response->headers)) {
-                $content_type =  is_array($response->headers[$type]) ?
-                                    $response->headers[$type][0] : $response->headers[$type];
-                if (strpos($content_type, 'application/json') !== false) {
-                    return true;
-                }
+        foreach ($response->getHeader('Content-Type') as $type) {
+            if (str_starts_with($type, 'application/json')) {
+                return true;
             }
         }
         return false;
@@ -403,7 +399,7 @@ class Client
             );
         }
 
-        if (in_array('application/json', $response->getHeader('Content-Type'))) {
+        if ($this->isJsonResponse($response)) {
             $token = array_merge(json_decode($response->body, true), ['created' => time()]);
         } else {
             parse_str($response->body, $token);
