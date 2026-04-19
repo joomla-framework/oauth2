@@ -13,6 +13,7 @@ use Joomla\Application\WebApplicationInterface;
 use Joomla\Http\Exception\UnexpectedResponseException;
 use Joomla\Http\Http;
 use Joomla\Http\HttpFactory;
+use Joomla\Http\Response;
 use Joomla\Input\Input;
 use Joomla\Uri\Uri;
 
@@ -80,6 +81,24 @@ class Client
     }
 
     /**
+     * Tests if given response contains JSON header
+     *
+     * @param Response  $response The response object
+     *
+     * @return  boolean
+     *
+     */
+    protected function isJsonResponse(Response $response)
+    {
+        foreach ($response->getHeader('Content-Type') as $type) {
+            if (str_starts_with($type, 'application/json')) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Get the access token or redirect to the authentication URL.
      *
      * @return  array|boolean  The access token or false on failure
@@ -112,7 +131,7 @@ class Client
                 );
             }
 
-            if (in_array('application/json', $response->getHeader('Content-Type'))) {
+            if ($this->isJsonResponse($response)) {
                 $token = array_merge(json_decode($response->body, true), ['created' => time()]);
             } else {
                 parse_str($response->body, $token);
@@ -380,7 +399,7 @@ class Client
             );
         }
 
-        if (in_array('application/json', $response->getHeader('Content-Type'))) {
+        if ($this->isJsonResponse($response)) {
             $token = array_merge(json_decode($response->body, true), ['created' => time()]);
         } else {
             parse_str($response->body, $token);
