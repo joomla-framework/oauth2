@@ -407,7 +407,6 @@ class Client
             );
         }
 
-
         if ($this->isJsonResponse($response)) {
             $token = array_merge(json_decode((string) $response->getBody(), true), ['created' => time()]);
         } else {
