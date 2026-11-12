@@ -232,7 +232,7 @@ class Client
      * @param   string   $url      The URL for the request
      * @param   mixed    $data     Either an associative array or a string to be sent with the request
      * @param   array    $headers  The headers to send with the request
-     * @param   string   $method   The method with which to send the request
+     * @param   string   $method   The method with which to send the request (case-insensitive)
      * @param   integer  $timeout  The timeout for the request
      *
      * @return  \Joomla\Http\Response
@@ -261,12 +261,18 @@ class Client
             $url->setVar($this->getOption('getparam', 'access_token'), $token['access_token']);
         }
 
+        $method = strtolower($method);
+
         switch ($method) {
             case 'head':
             case 'get':
-            case 'delete':
             case 'trace':
                 $response = $this->http->$method($url, $headers, $timeout);
+
+                break;
+
+            case 'delete':
+                $response = $this->http->delete($url, $headers, $timeout, $data);
 
                 break;
 
