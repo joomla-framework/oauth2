@@ -12,6 +12,7 @@ use Joomla\Http\Http;
 use Joomla\Http\Response;
 use Joomla\Input\Input;
 use Joomla\OAuth2\Client;
+use Joomla\OAuth2\Exception\ExpiredTokenException;
 use Joomla\Registry\Registry;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -182,9 +183,9 @@ class ClientTest extends TestCase
     }
 
     /**
-     * Tests the query method
+     * Tests the query method with an expired token that may not be refreshed
      */
-    public function testQuery()
+    public function testQueryWithExpiredToken()
     {
         $token['access_token']  = 'accessvalue';
         $token['refresh_token'] = 'refreshvalue';
@@ -192,10 +193,23 @@ class ClientTest extends TestCase
         $token['expires_in']    = 600;
         $this->object->setToken($token);
 
-        $result = $this->object->query('https://www.googleapis.com/auth/calendar', ['param' => 'value'], [], 'get');
-        $this->assertFalse($result);
+        $this->http->expects($this->never())
+            ->method('get');
 
-        $token['expires_in'] = 3600;
+        $this->expectException(ExpiredTokenException::class);
+
+        $this->object->query('https://www.googleapis.com/auth/calendar', ['param' => 'value'], [], 'get');
+    }
+
+    /**
+     * Tests the query method
+     */
+    public function testQuery()
+    {
+        $token['access_token']  = 'accessvalue';
+        $token['refresh_token'] = 'refreshvalue';
+        $token['created']       = time() - 1800;
+        $token['expires_in']    = 3600;
         $this->object->setToken($token);
 
         $returnData = new Response('data://text/plain,Lorem ipsum dolor sit amet.', 200, ['Content-Type' => 'text/html']);
