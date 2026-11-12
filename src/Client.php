@@ -99,6 +99,51 @@ class Client
     }
 
     /**
+     * Decode and validate the response of the token endpoint.
+     *
+     * @param   Response  $response  The response of the token endpoint
+     *
+     * @return  array  The token, with the time it was created
+     *
+     * @since   __DEPLOY_VERSION__
+     * @throws  UnexpectedResponseException  If the response cannot be decoded, reports an error or contains no access
+     *                                       token.
+     */
+    private function parseTokenResponse(Response $response): array
+    {
+        $body = (string) $response->getBody();
+
+        if ($this->isJsonResponse($response)) {
+            $token = json_decode($body, true);
+        } else {
+            parse_str($body, $token);
+        }
+
+        if (!\is_array($token)) {
+            throw new UnexpectedResponseException($response, \sprintf('The token response could not be decoded: %s', $body));
+        }
+
+        if (isset($token['error'])) {
+            $description = $token['error_description'] ?? '';
+
+            throw new UnexpectedResponseException(
+                $response,
+                \sprintf(
+                    'The token endpoint returned the error "%s"%s.',
+                    \is_scalar($token['error']) ? $token['error'] : json_encode($token['error']),
+                    \is_string($description) && $description !== '' ? ': ' . $description : ''
+                )
+            );
+        }
+
+        if (!isset($token['access_token']) || !\is_string($token['access_token']) || $token['access_token'] === '') {
+            throw new UnexpectedResponseException($response, \sprintf('The token response contains no access token: %s', $body));
+        }
+
+        return array_merge($token, ['created' => time()]);
+    }
+
+    /**
      * Get the access token or redirect to the authentication URL.
      *
      * @return  array|boolean  The access token or false on failure
@@ -133,12 +178,7 @@ class Client
                 );
             }
 
-            if ($this->isJsonResponse($response)) {
-                $token = array_merge(json_decode((string) $response->getBody(), true), ['created' => time()]);
-            } else {
-                parse_str((string) $response->getBody(), $token);
-                $token = array_merge($token, ['created' => time()]);
-            }
+            $token = $this->parseTokenResponse($response);
 
             $this->setToken($token);
 
@@ -407,12 +447,7 @@ class Client
             );
         }
 
-        if ($this->isJsonResponse($response)) {
-            $token = array_merge(json_decode((string) $response->getBody(), true), ['created' => time()]);
-        } else {
-            parse_str((string) $response->getBody(), $token);
-            $token = array_merge($token, ['created' => time()]);
-        }
+        $token = $this->parseTokenResponse($response);
 
         $this->setToken($token);
 
