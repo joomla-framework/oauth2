@@ -15,6 +15,7 @@ use Joomla\Http\Http;
 use Joomla\Http\HttpFactory;
 use Joomla\Http\Response;
 use Joomla\Input\Input;
+use Joomla\OAuth2\Exception\ExpiredTokenException;
 use Joomla\Uri\Uri;
 
 /**
@@ -30,7 +31,7 @@ class Client
      * @var    array|\ArrayAccess
      * @since  1.0
      */
-    protected $options;
+    protected array|\ArrayAccess $options;
 
     /**
      * The HTTP client object to use in sending HTTP requests.
@@ -38,7 +39,7 @@ class Client
      * @var    Http
      * @since  1.0
      */
-    protected $http;
+    protected Http $http;
 
     /**
      * The input object to use in retrieving GET/POST data.
@@ -46,15 +47,15 @@ class Client
      * @var    Input
      * @since  1.0
      */
-    protected $input;
+    protected Input $input;
 
     /**
      * The application object to send HTTP headers for redirects.
      *
-     * @var    WebApplicationInterface
+     * @var    WebApplicationInterface|null
      * @since  1.0
      */
-    protected $application;
+    protected ?WebApplicationInterface $application;
 
     /**
      * Constructor.
@@ -66,14 +67,12 @@ class Client
      *
      * @since   1.0
      */
-    public function __construct($options = [], ?Http $http = null, ?Input $input = null, ?WebApplicationInterface $application = null)
-    {
-        if (!\is_array($options) && !($options instanceof \ArrayAccess)) {
-            throw new \InvalidArgumentException(
-                'The options param must be an array or implement the ArrayAccess interface.'
-            );
-        }
-
+    public function __construct(
+        array|\ArrayAccess $options = [],
+        ?Http $http = null,
+        ?Input $input = null,
+        ?WebApplicationInterface $application = null
+    ) {
         $this->options     = $options;
         $this->http        = $http ?: (new HttpFactory())->getHttp($this->options);
         $this->input       = $input ?: ($application ? $application->getInput() : new Input());
@@ -88,7 +87,7 @@ class Client
      * @return  boolean
      *
      */
-    protected function isJsonResponse(Response $response)
+    protected function isJsonResponse(Response $response): bool
     {
         foreach ($response->getHeader('Content-Type') as $type) {
             if (str_starts_with($type, 'application/json')) {
@@ -101,13 +100,13 @@ class Client
     /**
      * Get the access token or redirect to the authentication URL.
      *
-     * @return  array|boolean  The access token or false on failure
+     * @return  array|false  The access token or false on failure
      *
      * @since   1.0
      * @throws  UnexpectedResponseException
      * @throws  \RuntimeException
      */
-    public function authenticate()
+    public function authenticate(): array|false
     {
         $dataCode = $this->input->get('code', false, 'raw');
 
@@ -165,7 +164,7 @@ class Client
      *
      * @since   1.0
      */
-    public function isAuthenticated()
+    public function isAuthenticated(): bool
     {
         $token = $this->getToken();
 
@@ -188,7 +187,7 @@ class Client
      * @since   1.0
      * @throws  \InvalidArgumentException
      */
-    public function createUrl()
+    public function createUrl(): string
     {
         if (!$this->getOption('authurl') || !$this->getOption('clientid')) {
             throw new \InvalidArgumentException('Authorization URL and client_id are required');
@@ -229,25 +228,26 @@ class Client
     /**
      * Send a signed OAuth request.
      *
-     * @param   string   $url      The URL for the request
-     * @param   mixed    $data     Either an associative array or a string to be sent with the request
-     * @param   array    $headers  The headers to send with the request
-     * @param   string   $method   The method with which to send the request
-     * @param   integer  $timeout  The timeout for the request
+     * @param   string             $url      The URL for the request
+     * @param   array|string|null  $data     Either an associative array or a string to be sent with the request
+     * @param   array              $headers  The headers to send with the request
+     * @param   string             $method   The method with which to send the request
+     * @param   ?integer           $timeout  The timeout for the request
      *
-     * @return  \Joomla\Http\Response
+     * @return  Response
      *
      * @since   1.0
+     * @throws  ExpiredTokenException  If the token has expired and the "userefresh" option is not set.
      * @throws  \InvalidArgumentException
      * @throws  \RuntimeException
      */
-    public function query($url, $data = null, $headers = [], $method = 'get', $timeout = null)
+    public function query(string $url, array|string|null $data = null, array $headers = [], string $method = 'get', ?int $timeout = null): Response
     {
         $token = $this->getToken();
 
         if (array_key_exists('expires_in', $token) && $token['created'] + $token['expires_in'] < time() + 20) {
             if (!$this->getOption('userefresh')) {
-                return false;
+                throw new ExpiredTokenException('The access token has expired and refreshing it is not enabled.');
             }
 
             $token = $this->refreshToken($token['refresh_token']);
@@ -305,7 +305,7 @@ class Client
      *
      * @since   1.0
      */
-    public function getOption($key, $default = null)
+    public function getOption(string $key, mixed $default = null): mixed
     {
         return $this->options[$key] ?? $default;
     }
@@ -316,11 +316,11 @@ class Client
      * @param   string  $key    The name of the option to set
      * @param   mixed   $value  The option value to set
      *
-     * @return  Client  This object for method chaining
+     * @return  $this
      *
      * @since   1.0
      */
-    public function setOption($key, $value)
+    public function setOption(string $key, mixed $value): static
     {
         $this->options[$key] = $value;
 
@@ -330,11 +330,11 @@ class Client
     /**
      * Get the access token from the Client instance.
      *
-     * @return  array  The access token
+     * @return  array|null  The access token, or null if none has been set
      *
      * @since   1.0
      */
-    public function getToken()
+    public function getToken(): ?array
     {
         return $this->getOption('accesstoken');
     }
@@ -344,11 +344,11 @@ class Client
      *
      * @param   array  $value  The access token
      *
-     * @return  Client  This object for method chaining
+     * @return  $this
      *
      * @since   1.0
      */
-    public function setToken(array $value)
+    public function setToken(array $value): static
     {
         if (!array_key_exists('expires_in', $value) && array_key_exists('expires', $value)) {
             $value['expires_in'] = $value['expires'];
@@ -363,7 +363,7 @@ class Client
     /**
      * Refresh the access token instance.
      *
-     * @param   string  $token  The refresh token
+     * @param   ?string  $token  The refresh token
      *
      * @return  array  The new access token
      *
@@ -371,7 +371,7 @@ class Client
      * @throws  UnexpectedResponseException
      * @throws  \RuntimeException
      */
-    public function refreshToken($token = null)
+    public function refreshToken(?string $token = null): array
     {
         if (!$this->getOption('userefresh')) {
             throw new \RuntimeException('Refresh token is not supported for this OAuth instance.');
