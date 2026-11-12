@@ -173,11 +173,31 @@ class Client
             return false;
         }
 
-        if (array_key_exists('expires_in', $token) && $token['created'] + $token['expires_in'] < time() + 20) {
+        if ($this->isTokenExpired($token)) {
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * Check whether a token has expired or expires within the next 20 seconds.
+     *
+     * A token without "expires_in" or "created" is not known to expire and is treated as valid.
+     *
+     * @param   array  $token  The token
+     *
+     * @return  boolean
+     *
+     * @since   __DEPLOY_VERSION__
+     */
+    private function isTokenExpired(array $token): bool
+    {
+        if (!isset($token['expires_in'], $token['created']) || !is_numeric($token['expires_in']) || !is_numeric($token['created'])) {
+            return false;
+        }
+
+        return $token['created'] + $token['expires_in'] < time() + 20;
     }
 
     /**
@@ -245,12 +265,16 @@ class Client
     {
         $token = $this->getToken();
 
-        if (array_key_exists('expires_in', $token) && $token['created'] + $token['expires_in'] < time() + 20) {
+        if (!\is_array($token) || !isset($token['access_token'])) {
+            throw new \RuntimeException('No access token is available. Call authenticate() or setToken() first.');
+        }
+
+        if ($this->isTokenExpired($token)) {
             if (!$this->getOption('userefresh')) {
                 return false;
             }
 
-            $token = $this->refreshToken($token['refresh_token']);
+            $token = $this->refreshToken($token['refresh_token'] ?? null);
         }
 
         $url = new Uri($url);
@@ -330,7 +354,7 @@ class Client
     /**
      * Get the access token from the Client instance.
      *
-     * @return  array  The access token
+     * @return  array|null  The access token, or null if none has been set
      *
      * @since   1.0
      */
@@ -380,7 +404,7 @@ class Client
         if (!$token) {
             $token = $this->getToken();
 
-            if (!array_key_exists('refresh_token', $token)) {
+            if (!\is_array($token) || empty($token['refresh_token'])) {
                 throw new \RuntimeException('No refresh token is available.');
             }
 
