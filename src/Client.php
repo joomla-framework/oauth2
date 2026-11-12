@@ -9,12 +9,14 @@
 
 namespace Joomla\OAuth2;
 
+use Joomla\Application\SessionAwareWebApplicationInterface;
 use Joomla\Application\WebApplicationInterface;
 use Joomla\Http\Exception\UnexpectedResponseException;
 use Joomla\Http\Http;
 use Joomla\Http\HttpFactory;
 use Joomla\Http\Response;
 use Joomla\Input\Input;
+use Joomla\Session\SessionInterface;
 use Joomla\Uri\Uri;
 
 /**
@@ -101,6 +103,9 @@ class Client
     /**
      * Get the access token or redirect to the authentication URL.
      *
+     * On the callback from the authorization server, the returned state is verified first (see verifyState()), and an
+     * error returned by the authorization server is thrown as a \RuntimeException.
+     *
      * @return  array|boolean  The access token or false on failure
      *
      * @since   1.0
@@ -110,6 +115,23 @@ class Client
     public function authenticate()
     {
         $dataCode = $this->input->get('code', false, 'raw');
+        $error    = $this->input->get('error', false, 'raw');
+
+        if ($dataCode || $error) {
+            $this->verifyState();
+        }
+
+        if ($error) {
+            $description = $this->input->get('error_description', '', 'raw');
+
+            throw new \RuntimeException(
+                \sprintf(
+                    'The authorization server returned the error "%s"%s.',
+                    $error,
+                    \is_string($description) && $description !== '' ? ': ' . $description : ''
+                )
+            );
+        }
 
         if ($dataCode) {
             $data = [
@@ -118,7 +140,7 @@ class Client
                 'client_id'     => $this->getOption('clientid'),
                 'client_secret' => $this->getOption('clientsecret'),
                 'code'          => $dataCode,
-            ];
+            ] + $this->getTokenRequestParameters();
 
             $response = $this->http->post($this->getOption('tokenurl'), $data);
 
@@ -194,36 +216,234 @@ class Client
             throw new \InvalidArgumentException('Authorization URL and client_id are required');
         }
 
-        $url = new Uri($this->getOption('authurl'));
-        $url->setVar('response_type', 'code');
-        $url->setVar('client_id', urlencode($this->getOption('clientid')));
+        $params = [
+            'response_type' => 'code',
+            'client_id'     => $this->getOption('clientid'),
+        ];
 
         $redirect = $this->getOption('redirecturi');
 
         if ($redirect) {
-            $url->setVar('redirect_uri', urlencode($redirect));
+            $params['redirect_uri'] = $redirect;
         }
 
         $scope = $this->getOption('scope');
 
         if ($scope) {
-            $scope = \is_array($scope) ? implode(' ', $scope) : $scope;
-            $url->setVar('scope', urlencode($scope));
+            $params['scope'] = \is_array($scope) ? implode(' ', $scope) : $scope;
         }
 
-        $state = $this->getOption('state');
+        $state = $this->createState();
 
         if ($state) {
-            $url->setVar('state', urlencode($state));
+            $params['state'] = $state;
+        }
+
+        if ($this->getOption('pkce')) {
+            $params['code_challenge']        = $this->createCodeChallenge();
+            $params['code_challenge_method'] = 'S256';
         }
 
         if (\is_array($this->getOption('requestparams'))) {
             foreach ($this->getOption('requestparams') as $key => $value) {
-                $url->setVar($key, urlencode($value));
+                $params[$key] = $value;
             }
         }
 
-        return (string) $url;
+        // The parameters are added to the query as application/x-www-form-urlencoded (RFC 6749, Appendix B).
+        $url       = $this->getOption('authurl');
+        $separator = '?';
+
+        if (str_contains($url, '?')) {
+            $separator = str_ends_with($url, '?') || str_ends_with($url, '&') ? '' : '&';
+        }
+
+        return $url . $separator . http_build_query($params, '', '&');
+    }
+
+    /**
+     * Verify the state returned by the authorization server.
+     *
+     * Unless the "validatestate" option is false, the returned state must match the state of the authorization
+     * request. If the application provides a session, that is the state createUrl() stored in it; it is removed from
+     * the session by this check. Without a session, it is the "state" option, if one is set.
+     *
+     * @return  void
+     *
+     * @since   __DEPLOY_VERSION__
+     * @throws  \RuntimeException  If the state does not match.
+     */
+    protected function verifyState(): void
+    {
+        if (!$this->getOption('validatestate', true)) {
+            return;
+        }
+
+        $session = $this->getSession();
+
+        if ($session !== null) {
+            $key      = $this->getSessionKey('state');
+            $expected = $session->get($key);
+            $session->remove($key);
+        } else {
+            $expected = $this->getOption('state');
+
+            if (!$expected) {
+                return;
+            }
+        }
+
+        $state = $this->input->get('state', '', 'raw');
+
+        if (!\is_string($expected) || $expected === '' || !\is_string($state) || !hash_equals($expected, $state)) {
+            throw new \RuntimeException('The state returned by the authorization server does not match the authorization request.');
+        }
+    }
+
+    /**
+     * Get the session used to store the state and the PKCE code verifier between the authorization request and the
+     * callback.
+     *
+     * @return  SessionInterface|null  The session, or null if the application does not provide one
+     *
+     * @since   __DEPLOY_VERSION__
+     */
+    protected function getSession(): ?SessionInterface
+    {
+        if (!$this->application instanceof SessionAwareWebApplicationInterface) {
+            return null;
+        }
+
+        try {
+            return $this->application->getSession();
+        } catch (\RuntimeException) {
+            return null;
+        }
+    }
+
+    /**
+     * Get the name of a session variable of this client.
+     *
+     * @param   string  $name  The name of the variable
+     *
+     * @return  string
+     *
+     * @since   __DEPLOY_VERSION__
+     */
+    private function getSessionKey(string $name): string
+    {
+        return $this->getOption('sessionnamespace', 'oauth2') . '.' . $name;
+    }
+
+    /**
+     * Get the state for the authorization request and store it in the session.
+     *
+     * @return  string|null  The configured state, a generated one, or null if no state is sent
+     *
+     * @since   __DEPLOY_VERSION__
+     */
+    private function createState(): ?string
+    {
+        $state   = $this->getOption('state');
+        $session = $this->getOption('validatestate', true) ? $this->getSession() : null;
+
+        if ($session === null) {
+            return $state ? (string) $state : null;
+        }
+
+        if (!$state) {
+            $state = bin2hex(random_bytes(16));
+        }
+
+        $session->set($this->getSessionKey('state'), (string) $state);
+
+        return (string) $state;
+    }
+
+    /**
+     * Create the PKCE code challenge (RFC 7636) for the authorization request.
+     *
+     * The code verifier is taken from the "codeverifier" option or generated and stored in the session.
+     *
+     * @return  string
+     *
+     * @since   __DEPLOY_VERSION__
+     * @throws  \RuntimeException  If no code verifier is configured and there is no session to store one.
+     */
+    private function createCodeChallenge(): string
+    {
+        $verifier = $this->getOption('codeverifier');
+
+        if (!$verifier) {
+            $session = $this->getSession();
+
+            if ($session === null) {
+                throw new \RuntimeException(
+                    'PKCE needs either the "codeverifier" option or a session to store the code verifier in.'
+                );
+            }
+
+            // 32 random bytes give a 43 character verifier (RFC 7636, section 4.1).
+            $verifier = $this->base64UrlEncode(random_bytes(32));
+            $session->set($this->getSessionKey('codeverifier'), $verifier);
+        }
+
+        return $this->base64UrlEncode(hash('sha256', $verifier, true));
+    }
+
+    /**
+     * Get the additional parameters of the token request for the authorization code.
+     *
+     * These are the PKCE code verifier and the "tokenparams" option.
+     *
+     * @return  array
+     *
+     * @since   __DEPLOY_VERSION__
+     * @throws  \RuntimeException  If PKCE is enabled and no code verifier is available.
+     */
+    private function getTokenRequestParameters(): array
+    {
+        $params = [];
+
+        if ($this->getOption('pkce')) {
+            $verifier = $this->getOption('codeverifier');
+
+            if (!$verifier) {
+                $session = $this->getSession();
+
+                if ($session !== null) {
+                    $key      = $this->getSessionKey('codeverifier');
+                    $verifier = $session->get($key);
+                    $session->remove($key);
+                }
+            }
+
+            if (!\is_string($verifier) || $verifier === '') {
+                throw new \RuntimeException('PKCE is enabled, but no code verifier is available for the token request.');
+            }
+
+            $params['code_verifier'] = $verifier;
+        }
+
+        if (\is_array($this->getOption('tokenparams'))) {
+            $params += $this->getOption('tokenparams');
+        }
+
+        return $params;
+    }
+
+    /**
+     * Encode data with the URL-safe base64 alphabet and without padding.
+     *
+     * @param   string  $data  The data to encode
+     *
+     * @return  string
+     *
+     * @since   __DEPLOY_VERSION__
+     */
+    private function base64UrlEncode(string $data): string
+    {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
     }
 
     /**
