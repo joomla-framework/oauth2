@@ -120,7 +120,7 @@ class Client
                 'code'          => $dataCode,
             ];
 
-            $response = $this->http->post($this->getOption('tokenurl'), $data);
+            $response = $this->sendTokenRequest($data);
 
             if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 400) {
                 throw new UnexpectedResponseException(
@@ -190,6 +190,8 @@ class Client
      */
     public function createUrl()
     {
+        $this->checkEndpoint($this->getOption('authurl'), 'authorization endpoint');
+
         if (!$this->getOption('authurl') || !$this->getOption('clientid')) {
             throw new \InvalidArgumentException('Authorization URL and client_id are required');
         }
@@ -394,7 +396,7 @@ class Client
             'client_secret' => $this->getOption('clientsecret'),
         ];
 
-        $response = $this->http->post($this->getOption('tokenurl'), $data);
+        $response = $this->sendTokenRequest($data);
 
         if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 400) {
             throw new UnexpectedResponseException(
@@ -417,5 +419,87 @@ class Client
         $this->setToken($token);
 
         return $token;
+    }
+
+    /**
+     * Send a request to the token endpoint, authenticating the client as the "clientauth" option says.
+     *
+     * With "clientauth" set to "basic", the client credentials are sent in an HTTP Basic Authorization header
+     * (client_secret_basic, RFC 6749, section 2.3.1) instead of the request body (client_secret_post, the default).
+     *
+     * @param   array  $data  The data of the token request, including client_id and client_secret
+     *
+     * @return  Response
+     *
+     * @since   __DEPLOY_VERSION__
+     * @throws  \InvalidArgumentException  If the "clientauth" option has an unknown value.
+     */
+    private function sendTokenRequest(array $data): Response
+    {
+        $url = $this->getOption('tokenurl');
+        $this->checkEndpoint($url, 'token endpoint');
+
+        $headers = [];
+
+        switch ($this->getOption('clientauth', 'post')) {
+            case 'post':
+                break;
+
+            case 'basic':
+                // The credentials are form-encoded before they are joined and base64-encoded (RFC 6749, section 2.3.1).
+                $headers['Authorization'] = 'Basic ' . base64_encode(
+                    urlencode((string) $data['client_id']) . ':' . urlencode((string) $data['client_secret'])
+                );
+
+                unset($data['client_id'], $data['client_secret']);
+
+                break;
+
+            default:
+                throw new \InvalidArgumentException(
+                    \sprintf('Unknown client authentication method "%s"; use "post" or "basic".', $this->getOption('clientauth'))
+                );
+        }
+
+        return $this->http->post($url, $data, $headers);
+    }
+
+    /**
+     * Warn if an endpoint does not use HTTPS.
+     *
+     * Requests to localhost and the "allowinsecure" option are exempt.
+     *
+     * @param   mixed   $url   The URL of the endpoint
+     * @param   string  $name  The name of the endpoint for the warning
+     *
+     * @return  void
+     *
+     * @since   __DEPLOY_VERSION__
+     */
+    private function checkEndpoint($url, string $name): void
+    {
+        if ($this->getOption('allowinsecure') || !\is_string($url) || $url === '') {
+            return;
+        }
+
+        if (strtolower((string) parse_url($url, PHP_URL_SCHEME)) === 'https') {
+            return;
+        }
+
+        $host = strtolower(trim((string) parse_url($url, PHP_URL_HOST), '[]'));
+
+        if (\in_array($host, ['localhost', '127.0.0.1', '::1'], true) || str_ends_with($host, '.localhost')) {
+            return;
+        }
+
+        trigger_error(
+            \sprintf(
+                'The OAuth2 %s "%s" does not use HTTPS, so credentials and tokens are sent unencrypted.'
+                . ' Use an https:// URL, or set the "allowinsecure" option if this is intended.',
+                $name,
+                $url
+            ),
+            E_USER_WARNING
+        );
     }
 }
