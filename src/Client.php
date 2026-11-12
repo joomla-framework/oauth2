@@ -414,6 +414,11 @@ class Client
             $token = array_merge($token, ['created' => time()]);
         }
 
+        // A new refresh token is optional (RFC 6749, section 6); keep using the current one if none is issued.
+        if (!isset($token['refresh_token']) || $token['refresh_token'] === '') {
+            $token['refresh_token'] = $data['refresh_token'];
+        }
+
         $this->setToken($token);
 
         return $token;
